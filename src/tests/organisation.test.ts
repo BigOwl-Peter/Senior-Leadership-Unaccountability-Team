@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { createLiveSession, tickLive } from '../game/live';
 import {
   answerCase,
+  caseSupportCost,
   businessWeek,
   organisation,
   setTeamPolicy,
@@ -10,6 +11,32 @@ import {
 import { parseLiveSave } from '../game/liveSave';
 
 describe('team-led company simulation', () => {
+  it('quotes varied stable prices, enforces affordability and preserves approved amounts', () => {
+    const s = tickLive({ ...createLiveSession('quotes'), paused: false }, 30);
+    const item = s.organisation!.cases[0];
+    const costs = Array.from({ length: 12 }, (_, topic) =>
+      caseSupportCost(s, { ...item, topic }),
+    );
+    expect(new Set(costs).size).toBeGreaterThan(6);
+    expect(costs[6]).toBeLessThanOrEqual(250);
+    expect(costs[8]).toBeGreaterThanOrEqual(900);
+    expect(costs[4]).toBeGreaterThanOrEqual(5000);
+    item.topic = 8;
+    const cost = caseSupportCost(s, item);
+    expect(caseSupportCost({ ...s, elapsed: 31 }, item)).toBe(cost);
+    s.game.company.cash = s.game.company.pendingCosts + cost - 1;
+    expect(() => answerCase(s, item.id, 'support')).toThrow('Not enough');
+    s.game.company.cash++;
+    const approved = answerCase(s, item.id, 'support');
+    expect(approved.organisation!.cases[0].supportCost).toBe(cost);
+    const restored = parseLiveSave(
+      JSON.stringify({ schemaVersion: 2, session: approved, highScores: [] }),
+    ).session;
+    expect(caseSupportCost(restored, restored.organisation!.cases[0])).toBe(
+      cost,
+    );
+    expect(caseSupportCost(s, { ...item, action: 'support' })).toBe(8000);
+  });
   it('healthy teams take ownership without executive micromanagement', () => {
     const s = tickLive({ ...createLiveSession('autonomy'), paused: false }, 30);
     for (const d of s.game.departments) d.workload = 0;
@@ -41,7 +68,7 @@ describe('team-led company simulation', () => {
     const funded = answerCase(initial, id, 'support');
     expect(
       funded.game.company.pendingCosts - initial.game.company.pendingCosts,
-    ).toBe(8000);
+    ).toBe(caseSupportCost(initial, initial.organisation!.cases[0]));
     const done = tickLive(funded, 45);
     expect(done.organisation!.cases[0].status).toBe('resolved');
     const ignored = tickLive(answerCase(initial, id, 'dismiss'), 90);

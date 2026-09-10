@@ -51,7 +51,9 @@ test('deadline expiry produces a team decision and popup', async ({ page }) => {
   await expect(page.locator('.conversation')).toContainText(
     'No sign-off received.',
   );
-  await expect(page.getByLabel('Chat notifications')).toBeVisible();
+  await expect(
+    page.getByLabel('Chat notifications', { exact: true }),
+  ).toBeVisible();
   await page.clock.runFor(6000);
   const state = await page.evaluate(() =>
     JSON.parse(localStorage.getItem('slut-live-save-v2')!),

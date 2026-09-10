@@ -1,5 +1,6 @@
 import type { DepartmentId } from '../models/game';
 import { expandedConversations } from './expandedEvents';
+import { careerConversations } from './careerEmails';
 export const teams: Record<
   DepartmentId,
   { initials: string; color: string; lead: string; role: string }
@@ -123,6 +124,7 @@ export const preferredResponses: Partial<
   it: { it: 'fix', budget: 'release', people: 'relief' },
 };
 export const conversations: Record<string, Conversation> = {
+  ...careerConversations,
   ...expandedConversations,
   budget: {
     owner: 'finance',

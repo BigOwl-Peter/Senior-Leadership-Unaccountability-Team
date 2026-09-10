@@ -41,6 +41,7 @@ import {
 } from '../components/RequestThread';
 import { CompanyViews } from '../components/CompanyViews';
 import { useGameAudio } from '../hooks/useGameAudio';
+import { OfficeOverview } from '../components/OfficeOverview';
 import { EmployeeChat, TeamMandate } from '../components/OrganisationViews';
 type View = 'Mail' | 'Chat' | 'Teams' | 'People' | 'Board' | 'Reports';
 type Folder =
@@ -162,6 +163,7 @@ function Workspace({
   const { session, notice, setPaused, setSpeed, restart, markRead } =
     useGameStore();
   const [view, setView] = useState<View>('Mail');
+  const [profileId, setProfileId] = useState<string | null>(null);
   const [folder, setFolder] = useState<Folder>('Inbox');
   const [selected, setSelected] = useState('request-0');
   const [query, setQuery] = useState('');
@@ -191,6 +193,9 @@ function Workspace({
   });
   const request = filtered.find((r) => r.id === selected) ?? filtered[0];
   const unread = session.requests.filter((r) => !r.read).length;
+  const chatUnread = session.messages
+    .slice(session.chatSeenThrough ?? 0)
+    .filter((m) => !m.requestId && m.author !== 'you').length;
   const notifications = session.messages
     .filter(
       (message) =>
@@ -372,6 +377,7 @@ function Workspace({
           {notice}
         </div>
       )}
+      <OfficeOverview onOpen={() => setView('People')} />
       <div className="desktop-body">
         <nav className="app-rail" aria-label="Applications">
           {views.map(({ name, icon: Icon }) => (
@@ -381,12 +387,18 @@ function Workspace({
               aria-label={name}
               onClick={() => {
                 setView(name);
+                setProfileId(null);
                 setMobileReader(false);
               }}
             >
               <span>
                 <Icon size={21} />
                 {name === 'Mail' && unread > 0 && <b>{unread}</b>}
+                {name === 'Chat' && chatUnread > 0 && (
+                  <b aria-label={`${chatUnread} new chat notifications`}>
+                    {chatUnread > 99 ? '99+' : chatUnread}
+                  </b>
+                )}
               </span>
               <small>{name}</small>
             </button>
@@ -662,7 +674,13 @@ function Workspace({
                   </span>
                 </div>
                 <div className="channel-messages">
-                  <TeamMandate id={channel} />
+                  <TeamMandate
+                    id={channel}
+                    onOpenEmployee={(id) => {
+                      setProfileId(id);
+                      setView('People');
+                    }}
+                  />
                   {session.messages
                     .filter(
                       (m) => m.departmentId === channel || m.author === channel,
@@ -694,7 +712,11 @@ function Workspace({
             </section>
           )}
           {(view === 'People' || view === 'Board' || view === 'Reports') && (
-            <CompanyViews key={view} view={view} />
+            <CompanyViews
+              key={view}
+              view={view}
+              initialEmployeeId={profileId}
+            />
           )}
         </main>
       </div>

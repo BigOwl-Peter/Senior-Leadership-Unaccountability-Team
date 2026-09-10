@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ArrowLeftRight,
   Eye,
@@ -19,14 +19,21 @@ import {
 import { departmentDefinitions } from '../data/departments';
 import { traits } from '../data/people';
 import { money, number } from '../utils/format';
-export function PeopleOffice() {
+import { officeSummaries } from '../game/officeSummary';
+export function PeopleOffice({
+  initialEmployeeId,
+}: {
+  initialEmployeeId?: string | null;
+}) {
   const { session, manage } = useGameStore();
   const game = session.game;
   const [tab, setTab] = useState('Directory');
   const [query, setQuery] = useState('');
   const [office, setOffice] = useState('all');
   const [status, setStatus] = useState('employed');
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(
+    initialEmployeeId ?? null,
+  );
   const [action, setAction] = useState<
     'profile' | 'transfer' | 'promote' | 'redundancy' | 'retain'
   >('profile');
@@ -39,6 +46,9 @@ export function PeopleOffice() {
   const modal = useRef<HTMLDialogElement>(null);
   const offerModal = useRef<HTMLDialogElement>(null);
   const employee = game.employees.find((e) => e.id === selected);
+  useEffect(() => {
+    if (initialEmployeeId) modal.current?.showModal();
+  }, [initialEmployeeId]);
   const candidate = game.candidates.find((c) => c.id === offerId);
   const disabled =
     game.status === 'finished' || game.personnelActionsLeft === 0;
@@ -147,7 +157,7 @@ export function PeopleOffice() {
         role="tablist"
         aria-label="People and office views"
       >
-        {['Directory', 'Recruitment', 'Offices'].map((name) => (
+        {['Directory', 'Recruitment', 'Offices', 'Movements'].map((name) => (
           <button
             key={name}
             role="tab"
@@ -158,6 +168,83 @@ export function PeopleOffice() {
           </button>
         ))}
       </div>
+      {tab === 'Movements' && (
+        <section className="workforce-movements">
+          <h2>Joiners & leavers</h2>
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Employee</th>
+                  <th>Office</th>
+                  <th>Movement</th>
+                  <th>When</th>
+                </tr>
+              </thead>
+              <tbody>
+                {game.recruitment
+                  .filter((r) => r.status !== 'cancelled')
+                  .map((r) => (
+                    <tr key={r.id}>
+                      <th>
+                        {r.employee.firstName} {r.employee.surname}
+                      </th>
+                      <td>{r.employee.officeId}</td>
+                      <td>{r.status === 'pending' ? 'Joining' : 'Joined'}</td>
+                      <td>Week {r.dueTurn}</td>
+                    </tr>
+                  ))}
+                {game.employees
+                  .filter((e) =>
+                    ['notice', 'resigned', 'redundant', 'absent'].includes(
+                      e.status,
+                    ),
+                  )
+                  .map((e) => (
+                    <tr key={e.id}>
+                      <th>
+                        <button
+                          className="person-name"
+                          onClick={() => open(e.id, 'profile')}
+                        >
+                          {e.firstName} {e.surname}
+                        </button>
+                      </th>
+                      <td>{e.officeId}</td>
+                      <td>
+                        {e.status === 'notice'
+                          ? 'Leaving / retention possible'
+                          : e.status === 'absent'
+                            ? 'Absent'
+                            : 'Left / ' + e.status}
+                      </td>
+                      <td>
+                        {e.status === 'notice'
+                          ? `Week ${e.departureTurn}`
+                          : e.status === 'absent'
+                            ? `Returns week ${e.returnTurn}`
+                            : `Week ${e.history?.at(-1)?.turn ?? game.turn}`}
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+          <h2>Recent people activity</h2>
+          {game.eventHistory
+            .filter((e) => e.type === 'personnel')
+            .slice(-20)
+            .reverse()
+            .map((e, i) => (
+              <p key={i}>
+                <strong>Week {e.turn}</strong> · {e.title}
+              </p>
+            ))}
+          {!game.eventHistory.some((e) => e.type === 'personnel') && (
+            <p>No workforce changes recorded yet.</p>
+          )}
+        </section>
+      )}
       {tab === 'Directory' && (
         <>
           <div className="people-filters">
@@ -400,6 +487,11 @@ export function PeopleOffice() {
       )}
       {tab === 'Offices' && (
         <>
+          <p>
+            Office turnover is allocated from the company total by current
+            employee capacity. The company still has one consolidated sales
+            ledger.
+          </p>
           <div className="office-mandate">
             <h2>Board mandate</h2>
             <p>{mandate.label}</p>
@@ -414,6 +506,14 @@ export function PeopleOffice() {
                 <strong>
                   {headcount(game, o.id)} <small>employees</small>
                 </strong>
+                <p>
+                  {money(
+                    officeSummaries(game).find(
+                      (summary) => summary.id === o.id,
+                    )!.turnover,
+                  )}{' '}
+                  allocated annualised turnover
+                </p>
                 <p>
                   {money(
                     game.employees

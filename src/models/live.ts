@@ -27,6 +27,7 @@ export interface TeamMessage {
   authorName?: string;
 }
 export interface LiveSession {
+  chatSeenThrough?: number;
   organisation?: import('../game/organisation').Organisation;
   game: GameState;
   elapsed: number;

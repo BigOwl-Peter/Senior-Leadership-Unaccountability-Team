@@ -43,6 +43,7 @@ export const liveSaveSchema = z.object({
               due: second,
               status: z.enum(['open', 'owned', 'resolved', 'escalated']),
               action: z.enum(['support', 'team', 'dismiss']).optional(),
+              supportCost: z.number().int().min(0).max(15000).optional(),
               outcome: z.string().optional(),
             }),
           )
@@ -55,6 +56,7 @@ export const liveSaveSchema = z.object({
       })
       .optional(),
     elapsed: second,
+    chatSeenThrough: z.number().int().min(0).max(1500).optional(),
     paused: z.boolean(),
     speed: z.union([z.literal(1), z.literal(2), z.literal(4)]),
     nextArrival: z.number().int().nonnegative(),

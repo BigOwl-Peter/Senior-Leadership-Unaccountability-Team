@@ -28,7 +28,9 @@ The supplied wallpaper and logo appear on the splash screen and game header. Cli
 - People has employee profiles, promotions, redundancy, retention offers, department/office transfers and recruitment. Three management actions refresh each business week.
 - Candidates have uncertain interview estimates and join after 1-3 weeks. Stress can cause absence or notice; payroll and capacity reflect actual employment.
 - Offices compares headcount and payroll against four possible board mandates. Board and Reports retain financials and the final assessment. Profit has zero direct score weighting.
-- There are 27 standard scenarios and 15 follow-ups, including supplier disputes, phishing, grievances, ERP changes, audits and expenses. Eligible unseen scenarios take priority over repeats; choices can lead to linked follow-up threads.
+- There are 81 standard scenarios and 15 follow-ups: six additional scenarios per department cover commercial disputes, support failures, logistics, product claims, finance controls, staffing, IT incidents and regulatory decisions. Eligible unseen scenarios take priority over repeats; choices can lead to linked follow-up threads.
+- The persistent office comparison shows headcount, pending and completed hires, notice and departures. Turnover shares are allocated by employee capacity from one consolidated company total, not separate office sales ledgers. People > Movements lists named joiners/leavers, dates and recent personnel activity.
+- Chat has a persistent new-activity badge, cleared when opening Chat and refreshed for incoming activity while away. Leadership exchanges arrive every 45 seconds with 30 boasts and 12 rebuttals, referencing actual team workload and staff. These exchanges are flavour, not additional hidden penalties.
 - Pause at any time or use 1x, 2x and 4x speed. Background tabs auto-pause. Reload restores paused without charging offline time.
 - Decision speed adjusts leadership score by up to +/-600 points, averaged across assessed requests. An immediate response earns full credit, halfway through the original deadline is neutral, and expiry earns the full penalty. Delegation is assessed at handoff, once; assessments do not reset the timing window. Pauses freeze simulation time. Board shows the live score and speed contribution; the total stays within 0-6,000. Previous saves start timing assessment from their next decision, and historic scores remain unchanged.
 
@@ -50,7 +52,7 @@ The unit suite covers the underlying simulation and deterministic scheduling. Br
 - `src/game/live.ts`: deterministic integer-second scheduler and request commands, without React, browser timers, storage or wall-clock time.
 - `src/game/engine.ts`: existing pure company simulation, reused for real-time decisions and automatic weekly accounting.
 - `src/data/teams.ts`: fictional department leads, agendas, preferred responses, proposals, objections and reminders. Leads also appear in the employee roster.
-- `src/data/events.ts`, `teamEvents.ts` and `expandedEvents.ts`: 42 authored scenarios covering all nine departments, with conditional eligibility and branching outcomes.
+- `src/data/events.ts`, `teamEvents.ts`, `expandedEvents.ts` and `careerEmails.ts`: 96 authored scenarios covering all nine departments, with conditional eligibility and branching outcomes.
 - `src/game/employees.ts`, `personnel.ts` and `src/data/people.ts`: seeded staff, mechanical traits, employment lifecycle, recruitment and office mandates.
 - `src/hooks/useLiveClock.ts`: browser clock adapter and visibility pausing; bounded catch-up for browser stalls.
 - `src/stores/gameStore.ts`: application commands, local save/resume and high scores.
@@ -67,5 +69,11 @@ Phases 4-6 extend the real-time prototype with employee simulation, branching ev
 See [real-time design notes](docs/realtime.md), [personnel and event notes](docs/phases456.md) and [underlying simulation notes](docs/simulation.md).
 
 ## Build
+
+## Invite-only Browser Testing
+
+The game is configured for static hosting with Sites via `.openai/hosting.json`. Access is controlled by the host's email allowlist, not a password embedded in the game. Invitees must sign in using their approved email address. The GitHub repository remains private; testers do not need repository access.
+
+Each tester has independent saves in their browser on the hosted origin. Local development saves do not transfer automatically. There is no shared multiplayer state or central score database. GitHub pushes save source changes; publishing a new hosted version is a separate operation, so local edits do not interrupt testers.
 
 `npm run build` produces `dist/` for static hosting, with relative asset paths and locally bundled fonts. Gameplay continues without network after loading. Cold offline navigation has no service worker. Development commands do not deploy the site.

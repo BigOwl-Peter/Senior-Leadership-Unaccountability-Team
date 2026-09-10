@@ -1,18 +1,23 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowLeft, MessageSquare, Users, Send } from 'lucide-react';
 import { useGameStore } from '../stores/gameStore';
-import { complaints } from '../game/organisation';
+import { complaints, caseSupportCost } from '../game/organisation';
+import { money } from '../utils/format';
 import { teamName, timeText } from '../game/live';
 import { Message, TeamAvatar } from './RequestThread';
 
 export function EmployeeChat() {
-  const { session, answerCase } = useGameStore();
+  const { session, answerCase, markChatSeen } = useGameStore();
+  useEffect(() => {
+    markChatSeen();
+  }, [session.messages.length, markChatSeen]);
   const cases = session.organisation?.cases ?? [];
   const [selected, setSelected] = useState(cases.at(-1)?.id ?? 'leadership');
   const [query, setQuery] = useState('');
   const [mobileThread, setMobileThread] = useState(false);
   const [seen, setSeen] = useState<Record<string, string>>({});
   const item = cases.find((c) => c.id === selected);
+  const supportCost = item ? caseSupportCost(session, item) : 0;
   const personName = (id: string) => {
     const e = session.game.employees.find((e) => e.id === id);
     return e ? `${e.firstName} ${e.surname}` : 'Former employee';
@@ -143,7 +148,7 @@ export function EmployeeChat() {
                   <strong>Decision record</strong>
                   <p>
                     {item.action === 'support'
-                      ? `${complaints[item.topic][2]}. Funding approved: £8,000.`
+                      ? `${complaints[item.topic][2]}. Funding approved: ${money(supportCost)}.`
                       : item.action === 'team'
                         ? 'Team lead and HR own the resolution.'
                         : 'No action authorised.'}
@@ -193,11 +198,11 @@ export function EmployeeChat() {
                     session.game.status === 'finished' ||
                     session.game.company.cash -
                       session.game.company.pendingCosts <
-                      8000
+                      supportCost
                   }
                   onClick={() => answerCase(item.id, 'support')}
                 >
-                  {complaints[item.topic][2]} / £8,000
+                  {complaints[item.topic][2]} / {money(supportCost)}
                 </button>
                 <button
                   disabled={session.game.status === 'finished'}

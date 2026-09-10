@@ -1,6 +1,7 @@
 import type { GameEffect, GameEvent } from '../models/game';
 import { teamEvents } from './teamEvents';
 import { expandedEvents, chainLinks } from './expandedEvents';
+import { careerEmails } from './careerEmails';
 const effect = (
   type: Exclude<GameEffect['type'], 'WORKLOAD'>,
   amount: number,
@@ -300,6 +301,7 @@ const baseEvents: GameEvent[] = [
   },
 ];
 export const events: GameEvent[] = [
+  ...careerEmails,
   ...baseEvents.map((event) => ({
     ...event,
     choices: event.choices.map((choice) => ({

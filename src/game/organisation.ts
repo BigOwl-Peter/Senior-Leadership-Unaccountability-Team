@@ -3,6 +3,7 @@ import type { LiveSession } from '../models/live';
 import { applyEffects } from './effects';
 import { clamp, loadRatio, teamLeadName, updateDepartments } from './systems';
 import { randomFor } from './random';
+import { leadershipBoasts, leadershipReplies } from '../data/leadershipChat';
 
 export type Policy = 'balanced' | 'growth' | 'quality' | 'people';
 export type CaseAction = 'support' | 'team' | 'dismiss';
@@ -24,6 +25,7 @@ export interface Organisation {
     status: 'open' | 'owned' | 'resolved' | 'escalated';
     action?: CaseAction;
     outcome?: string;
+    supportCost?: number;
   }[];
   backlog: number;
   defects: number;
@@ -93,6 +95,36 @@ export const complaints = [
     'Publish one accountable owner',
   ],
 ] as const;
+
+const supportRanges = [
+  [1500, 4500],
+  [250, 750],
+  [2000, 6500],
+  [1500, 5000],
+  [5000, 15000],
+  [2500, 9000],
+  [50, 250],
+  [0, 500],
+  [900, 2400],
+  [2000, 7500],
+  [1000, 4000],
+  [0, 750],
+] as const;
+export function caseSupportCost(
+  session: LiveSession,
+  item: Organisation['cases'][number],
+) {
+  if (item.supportCost !== undefined) return item.supportCost;
+  // Completed legacy decisions must retain the amount actually charged.
+  if (item.action === 'support') return 8000;
+  const [min, max] = supportRanges[item.topic];
+  return (
+    randomFor(session.game.seed, `case-quote-${item.id}-${item.topic}`).int(
+      min / 50,
+      max / 50,
+    ) * 50
+  );
+}
 
 export function organisation(s: LiveSession): Organisation {
   return (s.organisation ??= {
@@ -165,9 +197,10 @@ export function answerCase(input: LiveSession, id: string, action: CaseAction) {
     org = organisation(s);
   const item = org.cases.find((c) => c.id === id && c.status === 'open');
   if (!item) throw new Error('This conversation has already been handled.');
+  const supportCost = caseSupportCost(s, item);
   if (
     action === 'support' &&
-    s.game.company.cash - s.game.company.pendingCosts < 8000
+    s.game.company.cash - s.game.company.pendingCosts < supportCost
   )
     throw new Error('Not enough uncommitted cash.');
   const team = org.teams.find((t) => t.id === item.departmentId)!;
@@ -175,8 +208,9 @@ export function answerCase(input: LiveSession, id: string, action: CaseAction) {
   item.status = 'owned';
   item.due = Math.min(1200, s.elapsed + (action === 'dismiss' ? 90 : 45));
   if (action === 'support') {
+    item.supportCost = supportCost;
     applyEffects(s.game, [
-      { type: 'COST', amount: 8000 },
+      { type: 'COST', amount: supportCost },
       { type: 'WORKLOAD', departmentId: item.departmentId, amount: 25 },
     ]);
   } else if (action === 'team') {
@@ -187,7 +221,7 @@ export function answerCase(input: LiveSession, id: string, action: CaseAction) {
   message(
     s,
     item.departmentId,
-    `Leadership response to ${complaints[item.topic][0]}: ${action === 'support' ? 'funded action, GBP 8,000 and 25 team work' : action === 'team' ? 'team lead and HR own resolution; HR work +35' : 'no action authorised'}. Follow-up is on the record.`,
+    `Leadership response to ${complaints[item.topic][0]}: ${action === 'support' ? `funded action, GBP ${supportCost.toLocaleString('en-GB')} and 25 team work` : action === 'team' ? 'team lead and HR own resolution; HR work +35' : 'no action authorised'}. Follow-up is on the record.`,
     'You',
   );
   updateDepartments(s.game);
@@ -303,6 +337,25 @@ export function tickOrganisation(s: LiveSession) {
         teamLeadName(s.game, employee.departmentId),
       );
     }
+  }
+  if (s.elapsed % 45 === 20) {
+    const index = Math.floor(s.elapsed / 45);
+    const rng = randomFor(s.game.seed, `leadership-chat-${index}`);
+    const speaker =
+      s.game.departments[rng.int(0, s.game.departments.length - 1)];
+    const target = [...s.game.departments]
+      .filter((d) => d.id !== speaker.id)
+      .sort((a, b) => loadRatio(b) - loadRatio(a))[0];
+    const member = s.game.employees
+      .filter((e) => e.departmentId === target.id && e.status === 'active')
+      .sort((a, b) => b.stress - a.stress)[0];
+    const targetContext = `${target.name} is at ${Math.round(loadRatio(target) * 100)}% workload. ${member ? `${member.firstName} has been asked for another update.` : 'Their duty desk has been asked for another update.'}`;
+    message(
+      s,
+      speaker.id,
+      `${targetContext} ${leadershipBoasts[(index + randomFor(s.game.seed, 'boast-offset').int(0, leadershipBoasts.length - 1)) % leadershipBoasts.length]}`,
+    );
+    message(s, target.id, leadershipReplies[index % leadershipReplies.length]);
   }
   if (s.elapsed % 120 === 50) {
     const d =

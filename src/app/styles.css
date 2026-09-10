@@ -2391,6 +2391,89 @@ dialog label {
   padding: 5px 8px;
   white-space: nowrap;
 }
+.office-overview {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  background: #fafcfc;
+}
+.office-overview-item {
+  border: 0;
+  border-right: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 5px 18px;
+  padding: 9px 22px;
+  text-align: left;
+  min-width: 0;
+}
+.office-overview-item:last-child {
+  border-right: 0;
+}
+.office-overview-name {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.8rem;
+}
+.office-overview-name > span {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.office-turnover {
+  font-size: 0.85rem;
+  justify-self: end;
+}
+.office-turnover small {
+  color: var(--muted);
+  font-size: 0.66rem;
+}
+.office-movement {
+  display: flex;
+  grid-column: 1 / -1;
+  gap: 16px;
+  font-size: 0.68rem;
+  color: #4b655f;
+  flex-wrap: wrap;
+}
+.office-movement > span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.people-tabs {
+  flex-wrap: wrap;
+}
+@media (max-width: 760px) {
+  .office-overview-item {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 7px 10px;
+    gap: 4px;
+  }
+  .office-overview-name {
+    flex-wrap: wrap;
+    font-size: 0.72rem;
+    gap: 4px;
+  }
+  .office-overview-name > svg {
+    display: none;
+  }
+  .office-turnover {
+    font-size: 0.75rem;
+  }
+  .office-turnover small {
+    font-size: 0.59rem;
+  }
+  .office-movement {
+    gap: 3px;
+    font-size: 0.59rem;
+  }
+}
 .folder-sidebar.chat-sidebar-hidden {
   display: none;
 }

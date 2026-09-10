@@ -13,8 +13,10 @@ import { PeopleOffice } from './PeopleOffice';
 import { BusinessPressure } from './OrganisationViews';
 export function CompanyViews({
   view,
+  initialEmployeeId,
 }: {
   view: 'People' | 'Board' | 'Reports';
+  initialEmployeeId?: string | null;
 }) {
   const { session, restart, highScores } = useGameStore();
   const game = session.game;
@@ -30,7 +32,9 @@ export function CompanyViews({
               : 'Company performance'}
         </h1>
       </div>
-      {view === 'People' && <PeopleOffice />}
+      {view === 'People' && (
+        <PeopleOffice initialEmployeeId={initialEmployeeId} />
+      )}
       {view === 'Reports' && <BusinessPressure />}
       {view === 'Board' && (
         <>

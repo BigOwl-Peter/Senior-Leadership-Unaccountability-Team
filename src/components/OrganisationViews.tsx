@@ -3,7 +3,13 @@ import { type Policy } from '../game/organisation';
 import type { DepartmentId } from '../models/game';
 export { EmployeeChat } from './ChatWorkspace';
 
-export function TeamMandate({ id }: { id: DepartmentId }) {
+export function TeamMandate({
+  id,
+  onOpenEmployee,
+}: {
+  id: DepartmentId;
+  onOpenEmployee: (id: string) => void;
+}) {
   const { session, setTeamPolicy } = useGameStore();
   const team = session.organisation?.teams.find((t) => t.id === id);
   const members = session.game.employees.filter(
@@ -36,9 +42,13 @@ export function TeamMandate({ id }: { id: DepartmentId }) {
         <ul>
           {members.map((e) => (
             <li key={e.id}>
-              <strong>
+              <button
+                className="person-name"
+                onClick={() => onOpenEmployee(e.id)}
+                aria-label={`View ${e.firstName} ${e.surname}`}
+              >
                 {e.firstName} {e.surname}
-              </strong>{' '}
+              </button>{' '}
               · {e.jobTitle} · {e.status}
             </li>
           ))}

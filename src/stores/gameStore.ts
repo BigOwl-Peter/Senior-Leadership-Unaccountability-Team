@@ -57,6 +57,7 @@ function persist(session: LiveSession, highScores: HighScore[]) {
   }
 }
 interface Store {
+  markChatSeen: () => void;
   answerCase: (id: string, action: CaseAction) => void;
   setTeamPolicy: (id: DepartmentId, policy: Policy) => void;
   session: LiveSession;
@@ -102,6 +103,12 @@ export const useGameStore = create<Store>((set, get) => {
   }
   return {
     ...restore(),
+    markChatSeen: () =>
+      update((s) =>
+        s.chatSeenThrough === s.messages.length
+          ? s
+          : { ...s, chatSeenThrough: s.messages.length },
+      ),
     answerCase: (id, action) => update((s) => answerCase(s, id, action)),
     setTeamPolicy: (id, policy) => update((s) => setTeamPolicy(s, id, policy)),
     tick: (seconds) => update((s) => tickLive(s, seconds)),
