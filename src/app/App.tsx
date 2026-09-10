@@ -42,6 +42,7 @@ import {
 import { CompanyViews } from '../components/CompanyViews';
 import { useGameAudio } from '../hooks/useGameAudio';
 import { OfficeOverview } from '../components/OfficeOverview';
+import { HowToPlay } from '../components/HowToPlay';
 import { EmployeeChat, TeamMandate } from '../components/OrganisationViews';
 type View = 'Mail' | 'Chat' | 'Teams' | 'People' | 'Board' | 'Reports';
 type Folder =
@@ -122,6 +123,7 @@ export default function App() {
         </button>
         <div className="splash-music">
           {musicButton}
+          <HowToPlay />
           <button
             className="restart-career"
             onClick={() => {
@@ -250,6 +252,7 @@ function Workspace({
           </span>
         </div>
         <div className="suite-right">
+          <HowToPlay />
           <button
             className="restart-career"
             onClick={() => {

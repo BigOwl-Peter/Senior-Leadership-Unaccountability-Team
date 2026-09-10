@@ -1816,6 +1816,34 @@ dialog {
 dialog::backdrop {
   background: #1c304266;
 }
+.how-to-play {
+  width: min(660px, calc(100vw - 30px));
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+}
+.how-to-play h3 {
+  font-size: 1rem;
+  margin: 20px 0 8px;
+}
+.how-to-play p,
+.how-to-play li {
+  color: #3d5363;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+.how-to-play p {
+  margin-bottom: 12px;
+}
+.how-to-play ul {
+  padding-left: 20px;
+}
+.how-to-play li + li {
+  margin-top: 10px;
+}
+.how-to-play .help-pause-note {
+  border-top: 1px solid #ccd7df;
+  padding-top: 12px;
+}
 .dialog-heading {
   display: flex;
   align-items: center;
@@ -2747,6 +2775,18 @@ dialog label {
   margin-top: 20px;
 }
 @media (max-width: 760px) {
+  .suite-bar {
+    height: auto;
+    min-height: 42px;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+  .suite-right {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
   .suite-right .confidential {
     display: none;
   }
@@ -2804,6 +2844,8 @@ dialog label {
 }
 .splash-music {
   display: flex;
+  flex-wrap: wrap;
+  max-width: calc(100% - 40px);
   align-items: center;
   gap: 6px;
   position: absolute;

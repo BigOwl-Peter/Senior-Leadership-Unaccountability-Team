@@ -70,10 +70,12 @@ See [real-time design notes](docs/realtime.md), [personnel and event notes](docs
 
 ## Build
 
-## Invite-only Browser Testing
+## Public Browser Testing
 
-The game is configured for static hosting with Sites via `.openai/hosting.json`. Access is controlled by the host's email allowlist, not a password embedded in the game. Invitees must sign in using their approved email address. The GitHub repository remains private; testers do not need repository access.
+The repository and GitHub Pages game are public. The `Publish game to GitHub Pages` workflow tests, builds and publishes `dist/` when changes are pushed to `master`. Repository Settings > Pages must use GitHub Actions as its publishing source. No sign-in is required to play.
 
-Each tester has independent saves in their browser on the hosted origin. Local development saves do not transfer automatically. There is no shared multiplayer state or central score database. GitHub pushes save source changes; publishing a new hosted version is a separate operation, so local edits do not interrupt testers.
+Each tester has independent saves in their browser on the hosted origin. Local development saves do not transfer automatically. Private-window progress is normally discarded when that private browsing session ends. There is no shared multiplayer state or central score database. Local edits do not affect the hosted game until pushed and successfully deployed.
+
+The earlier Sites configuration in `.openai/hosting.json` is retained separately. GitHub Pages deployment does not publish to Sites or change its access controls.
 
 `npm run build` produces `dist/` for static hosting, with relative asset paths and locally bundled fonts. Gameplay continues without network after loading. Cold offline navigation has no service worker. Development commands do not deploy the site.
