@@ -132,6 +132,7 @@ export function createLiveSession(seed = 'SLUT-LIVE-01'): LiveSession {
   );
   const session: LiveSession = {
     game,
+    durationMinutes: 20,
     elapsed: 0,
     paused: true,
     speed: 1,

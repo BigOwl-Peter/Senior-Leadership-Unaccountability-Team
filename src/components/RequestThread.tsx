@@ -21,6 +21,7 @@ import { departmentDefinitions } from '../data/departments';
 import { choiceUnavailable } from '../game/requirements';
 import { teamName, timeText } from '../game/live';
 import { money, millions } from '../utils/format';
+import { realSeconds } from '../game/sessionTiming';
 export function TeamAvatar({
   team,
   small = false,
@@ -85,10 +86,12 @@ export function Message({ message }: { message: TeamMessage }) {
   );
 }
 export function Deadline({ request }: { request: LiveRequest }) {
-  const elapsed = useGameStore((s) => s.session.elapsed);
-  const seconds =
+  const session = useGameStore((s) => s.session);
+  const seconds = realSeconds(
+    session,
     (request.status === 'delegated' ? request.resolveAt! : request.deadline) -
-    elapsed;
+      session.elapsed,
+  );
   return (
     <span className={`deadline ${seconds <= 12 ? 'urgent' : ''}`}>
       <Clock3 size={13} />
@@ -305,7 +308,8 @@ export function RequestThread({
               </button>
             </div>
             <p className="action-cost">
-              Accountability -5 / receiving team work +40 / decision in 12
+              Accountability -5 / receiving team work +40 / decision in{' '}
+              {realSeconds(session, 12)}
               seconds
             </p>
           </section>

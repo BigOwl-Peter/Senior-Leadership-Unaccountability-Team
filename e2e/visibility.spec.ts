@@ -36,6 +36,7 @@ test('joiners and leavers are named and office counts update on arrival', async 
     'Leaving / retention possible',
   );
   await page.getByRole('button', { name: 'Start shift', exact: true }).click();
+  await page.getByRole('button', { name: '20 minutes', exact: true }).click();
   await page.clock.runFor(60000);
   await expect(
     page.getByLabel('Continental office and workforce'),
@@ -58,6 +59,7 @@ test('office comparison and persistent chat activity badge', async ({
     'allocated turnover',
   );
   await page.getByRole('button', { name: 'Start shift', exact: true }).click();
+  await page.getByRole('button', { name: '20 minutes', exact: true }).click();
   await page.clock.runFor(31000);
   const badge = page
     .getByRole('button', { name: 'Chat', exact: true })

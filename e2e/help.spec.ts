@@ -22,6 +22,7 @@ test('guide opens from splash and preserves the workspace pause state', async ({
     page.getByRole('button', { name: 'Start shift', exact: true }),
   ).toBeVisible();
   await page.getByRole('button', { name: 'Start shift', exact: true }).click();
+  await page.getByRole('button', { name: '20 minutes', exact: true }).click();
   await page.clock.runFor(2000);
   await help.click();
   const clock = page.getByLabel('Session time remaining');

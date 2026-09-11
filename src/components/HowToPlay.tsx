@@ -37,9 +37,10 @@ export function HowToPlay() {
           </button>
         </div>
         <p>
-          Your appointment lasts 20 business weeks: 20 minutes at normal speed.
-          Keep the company functioning and the board on side. Delegating
-          responsibility does not delegate the consequences.
+          Your appointment lasts 20 business weeks. Start shift offers 10
+          minutes at a quick pace or 20 minutes at the standard pace. Keep the
+          company functioning and the board on side. Delegating responsibility
+          does not delegate the consequences.
         </p>
         <h3>Your goals</h3>
         <p>

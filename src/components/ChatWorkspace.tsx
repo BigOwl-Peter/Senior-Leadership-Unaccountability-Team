@@ -4,6 +4,7 @@ import { useGameStore } from '../stores/gameStore';
 import { complaints, caseSupportCost } from '../game/organisation';
 import { money } from '../utils/format';
 import { teamName, timeText } from '../game/live';
+import { realSeconds } from '../game/sessionTiming';
 import { Message, TeamAvatar } from './RequestThread';
 
 export function EmployeeChat() {
@@ -158,7 +159,8 @@ export function EmployeeChat() {
               )}
               {item.status === 'owned' && (
                 <p className="chat-followup">
-                  Follow-up due in {timeText(item.due - session.elapsed)}.
+                  Follow-up due in{' '}
+                  {timeText(realSeconds(session, item.due - session.elapsed))}.
                 </p>
               )}
               {item.outcome && (
@@ -190,7 +192,10 @@ export function EmployeeChat() {
               <div className="chat-reply-heading">
                 <Send size={16} />
                 <strong>Reply</strong>
-                <time>{timeText(item.due - session.elapsed)} remaining</time>
+                <time>
+                  {timeText(realSeconds(session, item.due - session.elapsed))}{' '}
+                  remaining
+                </time>
               </div>
               <div className="case-actions">
                 <button

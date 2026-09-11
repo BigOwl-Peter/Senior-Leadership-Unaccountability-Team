@@ -1821,6 +1821,13 @@ dialog::backdrop {
   max-height: calc(100dvh - 32px);
   overflow-y: auto;
 }
+.audio-warning {
+  max-width: 220px;
+  font-size: 0.8rem;
+  color: #943b32;
+  background: #fff;
+  padding: 6px;
+}
 .how-to-play h3 {
   font-size: 1rem;
   margin: 20px 0 8px;

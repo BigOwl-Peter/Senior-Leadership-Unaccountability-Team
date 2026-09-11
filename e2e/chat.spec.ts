@@ -13,6 +13,7 @@ for (const width of [1366, 390]) {
     await page
       .getByRole('button', { name: 'Start shift', exact: true })
       .click();
+    await page.getByRole('button', { name: '20 minutes', exact: true }).click();
     await page.clock.runFor(31000);
     await page.getByRole('button', { name: 'Pause', exact: true }).click();
     await page.getByRole('button', { name: 'Chat', exact: true }).click();

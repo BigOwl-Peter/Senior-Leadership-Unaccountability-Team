@@ -8,6 +8,7 @@ test('employee chat decisions and group mandates are usable and saved', async ({
   await page.goto('/');
   await page.getByRole('button', { name: 'Enter executive workspace' }).click();
   await page.getByRole('button', { name: 'Start shift', exact: true }).click();
+  await page.getByRole('button', { name: '20 minutes', exact: true }).click();
   await page.clock.runFor(31000);
   await page.getByRole('button', { name: 'Pause', exact: true }).click();
   await page.getByRole('button', { name: 'Chat', exact: true }).click();
@@ -57,6 +58,7 @@ for (const width of [1366, 390]) {
     await page
       .getByRole('button', { name: 'Start shift', exact: true })
       .click();
+    await page.getByRole('button', { name: '20 minutes', exact: true }).click();
     await page.clock.runFor(31000);
     await page.getByRole('button', { name: 'Pause', exact: true }).click();
     for (const view of ['Chat', 'Teams', 'Reports']) {

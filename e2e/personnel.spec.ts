@@ -57,6 +57,7 @@ test('recruitment offer arrives at the promised week and appears in office total
     .click();
   await expect(page.locator('tbody')).toContainText('pending');
   await page.getByRole('button', { name: 'Start shift', exact: true }).click();
+  await page.getByRole('button', { name: '20 minutes', exact: true }).click();
   await page.clock.runFor(60000);
   await expect(page.locator('tbody')).toContainText('joined');
   await expect(page.locator('.personnel-summary')).toContainText('62');
@@ -71,6 +72,7 @@ test('a decision creates a linked follow-up thread', async ({ page }) => {
   await page.getByRole('button', { name: 'Enter executive workspace' }).click();
   await page.locator('.response-option').first().click();
   await page.getByRole('button', { name: 'Start shift', exact: true }).click();
+  await page.getByRole('button', { name: '20 minutes', exact: true }).click();
   await page.clock.runFor(46000);
   const followUpId = await page.evaluate(() => {
     const save = JSON.parse(localStorage.getItem('slut-live-save-v2')!);

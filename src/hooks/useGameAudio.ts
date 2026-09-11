@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useGameStore } from '../stores/gameStore';
+import { createNotificationAudio } from './notificationAudio';
 
 const media = (name: string) => `${import.meta.env.BASE_URL}media/${name}`;
 export function useGameAudio() {
+  const [audioError, setAudioError] = useState('');
   const [muted, setMuted] = useState(() => {
     try {
       return localStorage.getItem('slut-music-muted') === 'true';
@@ -17,22 +19,17 @@ export function useGameAudio() {
     track.loop = true;
     track.volume = 0.3;
     music.current = track;
-    const effects = new Set<HTMLAudioElement>();
+    const effects = createNotificationAudio(setAudioError);
     const playMusic = () => {
       if (!muteRef.current && track.paused) void track.play().catch(() => {});
     };
-    const sound = (name: string) => {
-      const audio = new Audio(media(name));
-      audio.volume = 0.65;
-      effects.add(audio);
-      audio.onended = () => {
-        effects.delete(audio);
-      };
-      void audio.play().catch(() => effects.delete(audio));
+    const unlock = () => {
+      playMusic();
+      effects.unlock();
     };
     playMusic();
-    document.addEventListener('pointerdown', playMusic);
-    document.addEventListener('keydown', playMusic);
+    document.addEventListener('click', unlock);
+    document.addEventListener('keydown', unlock);
     const unsubscribe = useGameStore.subscribe((current, previous) => {
       const next = current.session;
       const before = previous.session;
@@ -41,24 +38,25 @@ export function useGameAudio() {
       const requestIds = new Set(before.requests.map((r) => r.id));
       const messageIds = new Set(before.messages.map((m) => m.id));
       for (const request of next.requests) {
-        if (!requestIds.has(request.id)) sound('email_notification.mp3');
+        if (!requestIds.has(request.id))
+          void effects.play('email_notification.mp3');
       }
       for (const message of next.messages) {
         if (
           !messageIds.has(message.id) &&
           message.author !== 'you' &&
-          message.kind !== 'request'
+          !message.requestId
         ) {
-          sound('chat_notification.mp3');
+          void effects.play('chat_notification.mp3');
         }
       }
     });
     return () => {
       unsubscribe();
       track.pause();
-      effects.forEach((audio) => audio.pause());
-      document.removeEventListener('pointerdown', playMusic);
-      document.removeEventListener('keydown', playMusic);
+      effects.dispose();
+      document.removeEventListener('click', unlock);
+      document.removeEventListener('keydown', unlock);
       music.current = null;
     };
   }, []);
@@ -74,5 +72,5 @@ export function useGameAudio() {
     if (next) music.current?.pause();
     else void music.current?.play().catch(() => {});
   };
-  return { muted, toggleMusic };
+  return { muted, toggleMusic, audioError };
 }

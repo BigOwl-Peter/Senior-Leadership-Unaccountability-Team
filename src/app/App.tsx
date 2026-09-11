@@ -43,6 +43,7 @@ import { CompanyViews } from '../components/CompanyViews';
 import { useGameAudio } from '../hooks/useGameAudio';
 import { OfficeOverview } from '../components/OfficeOverview';
 import { HowToPlay } from '../components/HowToPlay';
+import { realSeconds } from '../game/sessionTiming';
 import { EmployeeChat, TeamMandate } from '../components/OrganisationViews';
 type View = 'Mail' | 'Chat' | 'Teams' | 'People' | 'Board' | 'Reports';
 type Folder =
@@ -69,7 +70,7 @@ const folders: { name: Folder; icon: LucideIcon }[] = [
 export default function App() {
   const [splash, setSplash] = useState(true);
   const [entering, setEntering] = useState(false);
-  const { muted, toggleMusic } = useGameAudio();
+  const { muted, toggleMusic, audioError } = useGameAudio();
   const transition = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(
     () => () => {
@@ -93,15 +94,22 @@ export default function App() {
     );
   };
   const musicButton = (
-    <button
-      className="icon-button"
-      onClick={toggleMusic}
-      title={muted ? 'Unmute music' : 'Mute music'}
-      aria-label={muted ? 'Unmute music' : 'Mute music'}
-      aria-pressed={muted}
-    >
-      {muted ? <VolumeX size={19} /> : <Volume2 size={19} />}
-    </button>
+    <>
+      <button
+        className="icon-button"
+        onClick={toggleMusic}
+        title={muted ? 'Unmute music' : 'Mute music'}
+        aria-label={muted ? 'Unmute music' : 'Mute music'}
+        aria-pressed={muted}
+      >
+        {muted ? <VolumeX size={19} /> : <Volume2 size={19} />}
+      </button>
+      {audioError && (
+        <span className="audio-warning" role="status">
+          {audioError}
+        </span>
+      )}
+    </>
   );
   if (splash)
     return (
@@ -174,6 +182,7 @@ function Workspace({
   const [dismissed, setDismissed] = useState<string[]>([]);
   const [seed, setSeed] = useState(session.game.seed);
   const dialog = useRef<HTMLDialogElement>(null);
+  const shiftDialog = useRef<HTMLDialogElement>(null);
   const game = session.game;
   const m = game.metrics;
   const finished = game.status === 'finished';
@@ -285,7 +294,11 @@ function Workspace({
           </span>
           <span className="session-clock" aria-label="Session time remaining">
             <Timer size={17} />
-            <b>{timeText(SESSION_SECONDS - session.elapsed)}</b>
+            <b>
+              {timeText(
+                realSeconds(session, SESSION_SECONDS - session.elapsed),
+              )}
+            </b>
             <small>remaining</small>
           </span>
           <div className="speed-control" aria-label="Simulation speed">
@@ -302,7 +315,11 @@ function Workspace({
           </div>
           <button
             className={`clock-button ${session.paused ? 'primary' : ''}`}
-            onClick={() => setPaused(!session.paused)}
+            onClick={() => {
+              if (session.paused && session.elapsed === 0)
+                shiftDialog.current?.showModal();
+              else setPaused(!session.paused);
+            }}
             disabled={finished}
           >
             {session.paused ? <Play size={15} /> : <Pause size={15} />}
@@ -800,6 +817,36 @@ function Workspace({
           </div>
         ))}
       </aside>
+      <dialog ref={shiftDialog} aria-labelledby="shift-length-title">
+        <div className="dialog-heading">
+          <h2 id="shift-length-title">How long do you have?</h2>
+          <button
+            className="icon-button"
+            aria-label="Cancel start shift"
+            onClick={() => shiftDialog.current?.close()}
+          >
+            <X size={19} />
+          </button>
+        </div>
+        <p>
+          Both appointments cover 20 business weeks. Choose a quick shift or the
+          standard pace.
+        </p>
+        <div className="dialog-actions">
+          {([10, 20] as const).map((minutes) => (
+            <button
+              key={minutes}
+              className={minutes === 20 ? 'primary' : ''}
+              onClick={() => {
+                useGameStore.getState().startShift(minutes);
+                shiftDialog.current?.close();
+              }}
+            >
+              <Timer size={16} /> {minutes} minutes
+            </button>
+          ))}
+        </div>
+      </dialog>
       <dialog ref={dialog}>
         <div className="dialog-heading">
           <h2>New appointment</h2>

@@ -14,6 +14,7 @@ test('live clock, overlapping requests, team chat and approval', async ({
     page.getByRole('button', { name: 'Start shift', exact: true }),
   ).toBeVisible();
   await page.getByRole('button', { name: 'Start shift', exact: true }).click();
+  await page.getByRole('button', { name: '20 minutes', exact: true }).click();
   await page.clock.runFor(5000);
   await expect(
     page
@@ -44,6 +45,7 @@ test('deadline expiry produces a team decision and popup', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Enter executive workspace' }).click();
   await page.getByRole('button', { name: 'Start shift', exact: true }).click();
+  await page.getByRole('button', { name: '20 minutes', exact: true }).click();
   await page.clock.runFor(55000);
   await expect(page.locator('.request-status')).toHaveText(
     'Team proceeded without approval',
@@ -74,6 +76,7 @@ test('delegate, receive decision, and restore paused without offline penalty', a
     'Compliance owns this decision',
   );
   await page.getByRole('button', { name: 'Start shift', exact: true }).click();
+  await page.getByRole('button', { name: '20 minutes', exact: true }).click();
   await page.clock.runFor(13000);
   await expect(page.locator('.conversation')).toContainText(
     'Compliance has taken the decision',
@@ -110,11 +113,12 @@ test('impact assessment is one-use, speed control works, and office transfer rem
       exact: true,
     }),
   ).toBeDisabled();
-  await page.getByRole('button', { name: '2x', exact: true }).click();
   await page.getByRole('button', { name: 'Start shift', exact: true }).click();
+  await page.getByRole('button', { name: '20 minutes', exact: true }).click();
+  await page.getByRole('button', { name: '2x', exact: true }).click();
   await page.clock.runFor(5000);
   await expect(page.getByLabel('Session time remaining')).toContainText(
-    '19:50',
+    '09:55',
   );
   await page.getByRole('button', { name: 'People', exact: true }).click();
   await page
@@ -188,6 +192,7 @@ test('the live session works offline after load', async ({ page, context }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Enter executive workspace' }).click();
   await page.getByRole('button', { name: 'Start shift', exact: true }).click();
+  await page.getByRole('button', { name: '20 minutes', exact: true }).click();
   await context.setOffline(true);
   await page.clock.runFor(8000);
   await page.locator('.response-option').first().click();
@@ -204,6 +209,7 @@ for (const width of [1920, 1366, 768, 390]) {
     await page
       .getByRole('button', { name: 'Start shift', exact: true })
       .click();
+    await page.getByRole('button', { name: '20 minutes', exact: true }).click();
     await page.clock.runFor(30000);
     if (width < 760) await page.locator('.mail-row').first().click();
     await expect(page.locator('.response-option').first()).toBeVisible();

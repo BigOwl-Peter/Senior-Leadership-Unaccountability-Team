@@ -18,6 +18,7 @@ import {
 import type { PersonnelAction } from '../game/personnel';
 import { parseLiveSave } from '../game/liveSave';
 import { leadershipScore } from '../game/systems';
+import { startShift } from '../game/sessionTiming';
 const KEY = 'slut-live-save-v2';
 function restore() {
   try {
@@ -57,6 +58,7 @@ function persist(session: LiveSession, highScores: HighScore[]) {
   }
 }
 interface Store {
+  startShift: (minutes: 10 | 20) => void;
   markChatSeen: () => void;
   answerCase: (id: string, action: CaseAction) => void;
   setTeamPolicy: (id: DepartmentId, policy: Policy) => void;
@@ -103,6 +105,7 @@ export const useGameStore = create<Store>((set, get) => {
   }
   return {
     ...restore(),
+    startShift: (minutes) => update((s) => startShift(s, minutes)),
     markChatSeen: () =>
       update((s) =>
         s.chatSeenThrough === s.messages.length

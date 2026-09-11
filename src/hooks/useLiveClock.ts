@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
 import { useGameStore } from '../stores/gameStore';
+import { sessionRate } from '../game/sessionTiming';
 export function useLiveClock() {
   const paused = useGameStore((s) => s.session.paused);
   const speed = useGameStore((s) => s.session.speed);
+  const rate = useGameStore((s) => sessionRate(s.session));
   useEffect(() => {
     const visibility = () => {
       if (document.hidden) useGameStore.getState().setPaused(true);
@@ -21,7 +23,7 @@ export function useLiveClock() {
     let accumulated = 0;
     const timer = window.setInterval(() => {
       const now = performance.now();
-      accumulated += Math.min(1000, now - previous) * speed;
+      accumulated += Math.min(1000, now - previous) * speed * rate;
       previous = now;
       const seconds = Math.floor(accumulated / 1000);
       if (seconds > 0 && !document.hidden) {
@@ -30,5 +32,5 @@ export function useLiveClock() {
       }
     }, 250);
     return () => window.clearInterval(timer);
-  }, [paused, speed]);
+  }, [paused, speed, rate]);
 }

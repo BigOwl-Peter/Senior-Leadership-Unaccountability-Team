@@ -56,6 +56,7 @@ export const liveSaveSchema = z.object({
       })
       .optional(),
     elapsed: second,
+    durationMinutes: z.union([z.literal(10), z.literal(20)]).default(20),
     chatSeenThrough: z.number().int().min(0).max(1500).optional(),
     paused: z.boolean(),
     speed: z.union([z.literal(1), z.literal(2), z.literal(4)]),

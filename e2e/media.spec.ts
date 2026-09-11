@@ -10,6 +10,11 @@ test('splash, audio routing, mute persistence and paused home navigation', async
       played.push(this.src);
       return Promise.resolve();
     };
+    const start = AudioBufferSourceNode.prototype.start;
+    AudioBufferSourceNode.prototype.start = function (...args) {
+      played.push(`notification:${this.buffer?.duration}`);
+      return start.apply(this, args);
+    };
   });
   await page.clock.install();
   await page.goto('/');
@@ -25,13 +30,21 @@ test('splash, audio routing, mute persistence and paused home navigation', async
     page.getByRole('button', { name: 'Unmute music', exact: true }),
   ).toBeVisible();
   await page.getByRole('button', { name: 'Start shift', exact: true }).click();
+  await page.getByRole('button', { name: '20 minutes', exact: true }).click();
   await page.clock.runFor(30000);
   const played = await page.evaluate(
     () => (window as unknown as { played: string[] }).played,
   );
   expect(played.some((s) => s.endsWith('background_music.mp3'))).toBe(true);
-  expect(played.some((s) => s.endsWith('email_notification.mp3'))).toBe(true);
-  expect(played.some((s) => s.endsWith('chat_notification.mp3'))).toBe(true);
+  await expect
+    .poll(async () =>
+      page.evaluate(() => {
+        const sounds = (window as unknown as { played: string[] }).played;
+        return new Set(sounds.filter((s) => s.startsWith('notification:')))
+          .size;
+      }),
+    )
+    .toBe(2);
   await page
     .getByRole('button', { name: 'Pause and return to splash screen' })
     .click();
