@@ -115,6 +115,7 @@ export class OfficeScene extends Phaser.Scene {
     this.rect(x + 33, y + 52, 28, 23, 0x577376);
   }
   create() {
+    const south = this.office === 'continental';
     this.cameras.main.setBackgroundColor(
       this.office === 'albion' ? '#49685d' : '#69876a',
     );
@@ -139,6 +140,35 @@ export class OfficeScene extends Phaser.Scene {
             this.office === 'albion' ? 0x627d6b : 0x859564,
           );
       }
+    // The exterior and room plans identify each site independently of the HUD.
+    if (south) {
+      this.rect(0, 0, 1280, 65, 0x8ccbd1);
+      this.floor.fillStyle(0x657d83);
+      this.floor.fillPoints(
+        [
+          new Phaser.Geom.Point(120, 65),
+          new Phaser.Geom.Point(260, 19),
+          new Phaser.Geom.Point(570, 19),
+          new Phaser.Geom.Point(660, 65),
+        ],
+        true,
+      );
+      for (let x = 0; x < 1280; x += 24) this.rect(x, 808, 21, 56, 0xb99770);
+      for (const x of [170, 380, 890, 1100]) {
+        this.floor.fillStyle(0xf2e7cb);
+        this.floor.fillCircle(x, 835, 21);
+        this.rect(x - 25, 825, 8, 18, 0x467b71);
+        this.rect(x + 17, 825, 8, 18, 0x467b71);
+      }
+    } else {
+      this.rect(0, 0, 1280, 62, 0x68737b);
+      for (let x = 0; x < 1280; x += 100) this.rect(x, 24, 55, 4, 0xe2dcb1);
+      this.rect(0, 808, 1280, 56, 0xa4aaad);
+      for (let x = 0; x < 1280; x += 48) {
+        this.floor.lineStyle(1, 0x818a90);
+        this.floor.lineBetween(x, 808, x, 864);
+      }
+    }
     this.rect(58, 68, 1170, 742, 0x203e4044);
     this.rect(64, 72, 1152, 728, 0xe8e9dd);
     for (let x = 64; x < 1216; x += 32)
@@ -146,9 +176,9 @@ export class OfficeScene extends Phaser.Scene {
         this.floor.lineStyle(1, 0xcdd5cd, 0.45);
         this.floor.strokeRect(x, y, 32, 32);
       }
-    this.rect(80, 88, 340, 240, 0x94b4aa);
-    this.rect(448, 88, 368, 240, 0xd2c39c);
-    this.rect(864, 88, 336, 240, 0xb7a6b9);
+    this.rect(80, 88, 340, 240, south ? 0xc8b0a0 : 0x94b4aa);
+    this.rect(448, 88, 368, 240, south ? 0xe4ddbc : 0xd2c39c);
+    this.rect(864, 88, 336, 240, south ? 0x95bdb6 : 0xb7a6b9);
     this.rect(
       80,
       416,
@@ -179,9 +209,24 @@ export class OfficeScene extends Phaser.Scene {
       this.rect(x, 72, 64, 12, 0x86b9c5);
       this.rect(x + 3, 74, 58, 3, 0xdcefee);
     }
-    this.label(250, 112, 'THE ALIGNMENT ROOM', 13);
-    this.label(630, 112, 'CAFFEINE & CONCERNS', 13);
-    this.label(1030, 112, 'MANAGING DIRECTOR', 13);
+    this.label(
+      250,
+      112,
+      south ? 'MD / THE CAPE RETREAT' : 'THE ALIGNMENT ROOM',
+      13,
+    );
+    this.label(
+      630,
+      112,
+      south ? 'THE SOCIAL RESPONSIBILITY CAFE' : 'CAFFEINE & CONCERNS',
+      13,
+    );
+    this.label(
+      1030,
+      112,
+      south ? 'THE TABLE MOUNTAIN ROOM' : 'MANAGING DIRECTOR',
+      13,
+    );
     this.label(
       640,
       374,
@@ -189,31 +234,64 @@ export class OfficeScene extends Phaser.Scene {
       16,
     );
     // Meeting table, lounge, kitchenette and MD office.
-    this.rect(148, 164, 184, 76, 0x8d6652);
-    this.rect(154, 169, 172, 64, 0xb78963);
-    this.solid(148, 164, 184, 76);
-    for (let x = 156; x < 330; x += 52) {
-      this.rect(x, 145, 30, 15, 0x3e6c69);
-      this.rect(x, 249, 30, 15, 0x3e6c69);
-      this.rect(x + 6, 187, 18, 12, 0xe9e8dc);
+    if (south) {
+      this.desk(205, 174);
+      this.rect(100, 166, 62, 88, 0xa66359);
+      this.solid(100, 166, 62, 88);
+      this.rect(342, 166, 50, 88, 0xa66359);
+      this.solid(342, 166, 50, 88);
+      this.plant(110, 298);
+      this.plant(392, 298);
+      this.rect(474, 144, 310, 32, 0x5e9185);
+      this.solid(474, 144, 310, 32);
+      for (const x of [535, 720]) {
+        this.floor.fillStyle(0xeee4c7);
+        this.floor.fillCircle(x, 245, 29);
+        this.solid(x - 23, 222, 46, 46);
+        this.rect(x - 46, 233, 16, 24, 0xba7264);
+        this.rect(x + 30, 233, 16, 24, 0xba7264);
+      }
+      this.rect(925, 179, 216, 66, 0x467e79);
+      this.rect(930, 184, 206, 56, 0xd7bd8b);
+      this.solid(925, 179, 216, 66);
+      for (let x = 936; x < 1140; x += 48) {
+        this.rect(x, 156, 28, 17, 0xb97360);
+        this.rect(x, 252, 28, 17, 0xb97360);
+        this.rect(x + 3, 198, 20, 15, 0xf7f3df);
+      }
+      this.plant(890, 294);
+      this.plant(1170, 294);
+    } else {
+      this.rect(148, 164, 184, 76, 0x8d6652);
+      this.rect(154, 169, 172, 64, 0xb78963);
+      this.solid(148, 164, 184, 76);
+      for (let x = 156; x < 330; x += 52) {
+        this.rect(x, 145, 30, 15, 0x3e6c69);
+        this.rect(x, 249, 30, 15, 0x3e6c69);
+        this.rect(x + 6, 187, 18, 12, 0xe9e8dc);
+      }
+      this.rect(468, 146, 55, 136, 0xa7a99b);
+      this.rect(472, 150, 47, 128, 0xf0efe0);
+      this.solid(468, 146, 55, 136);
+      this.rect(478, 166, 30, 34, 0x364249);
+      this.rect(584, 192, 85, 52, 0xaa7c58);
+      this.solid(584, 192, 85, 52);
+      this.rect(701, 180, 88, 35, 0x668972);
+      this.rect(701, 226, 88, 35, 0x668972);
+      this.desk(998, 174);
+      this.rect(902, 166, 56, 76, 0x3c6b69);
+      this.rect(1136, 160, 34, 84, 0x895d6b);
+      this.plant(896, 296);
+      this.plant(1170, 296);
+      this.label(1037, 266, 'OWN NOTHING.', 11, '#71616f');
     }
-    this.rect(468, 146, 55, 136, 0xa7a99b);
-    this.rect(472, 150, 47, 128, 0xf0efe0);
-    this.solid(468, 146, 55, 136);
-    this.rect(478, 166, 30, 34, 0x364249);
-    this.rect(584, 192, 85, 52, 0xaa7c58);
-    this.solid(584, 192, 85, 52);
-    this.rect(701, 180, 88, 35, 0x668972);
-    this.rect(701, 226, 88, 35, 0x668972);
-    this.desk(998, 174);
-    this.rect(902, 166, 56, 76, 0x3c6b69);
-    this.rect(1136, 160, 34, 84, 0x895d6b);
-    this.plant(896, 296);
-    this.plant(1170, 296);
-    this.label(1037, 266, 'OWN NOTHING.', 11, '#71616f');
     for (let row = 0; row < 2; row++)
-      for (let col = 0; col < 6; col++)
+      for (let col = 0; col < 6; col++) {
         this.desk(110 + col * 184, 436 + row * 106);
+        if (!south)
+          this.rect(108 + col * 184, 430 + row * 106, 94, 5, 0x687f96);
+        else if (row === 0) this.plant(226 + col * 184, 468);
+      }
     this.rect(128, 691, 150, 36, 0xd9be8c);
     this.solid(128, 691, 150, 36);
     this.label(240, 759, 'RECEPTION', 12);
@@ -322,12 +400,13 @@ export class OfficeScene extends Phaser.Scene {
         },
       );
     });
+    const bossX = south ? 250 : 1050;
     const boss = this.add
-      .sprite(1050, 276, 'md-0')
+      .sprite(bossX, 276, 'md-0')
       .setInteractive({ useHandCursor: true });
-    const bossLabel = this.label(1050, 307, 'MAXWELL / MD', 11, '#764252');
+    const bossLabel = this.label(bossX, 307, 'MAXWELL / MD', 11, '#764252');
     const bossBubble = this.add
-      .text(1050, 220, '', {
+      .text(bossX, 220, '', {
         fontFamily: 'Arial',
         fontSize: '13px',
         color: '#fff3dd',
@@ -337,14 +416,14 @@ export class OfficeScene extends Phaser.Scene {
       })
       .setOrigin(0.5, 1)
       .setDepth(1800);
-    const bossMarker = this.label(1050, 230, '!', 22, '#973e38');
+    const bossMarker = this.label(bossX, 230, '!', 22, '#973e38');
     this.actors.push({
       sprite: boss,
       label: bossLabel,
       bubble: bossBubble,
       marker: bossMarker,
       id: 'md',
-      x: 1050,
+      x: bossX,
       y: 276,
       index: 99,
     });
