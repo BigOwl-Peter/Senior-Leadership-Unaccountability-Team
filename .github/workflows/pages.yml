@@ -1,7 +1,7 @@
 name: Publish game to GitHub Pages
 on:
   push:
-    branches: [master]
+    branches: [codex/corporate-world]
   workflow_dispatch:
 permissions:
   contents: read

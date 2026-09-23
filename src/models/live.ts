@@ -27,6 +27,8 @@ export interface TeamMessage {
   authorName?: string;
 }
 export interface LiveSession {
+  world?: import('../world/model').WorldCareer;
+  staffSurvey?: import('../game/staffSurvey').StaffSurvey;
   durationMinutes?: 10 | 20;
   chatSeenThrough?: number;
   organisation?: import('../game/organisation').Organisation;

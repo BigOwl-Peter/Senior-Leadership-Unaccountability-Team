@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './app/App';
+import App from './world/WorldApp';
 import '@fontsource-variable/dm-sans';
 import '@fontsource-variable/manrope';
 import './app/styles.css';

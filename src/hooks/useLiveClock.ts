@@ -1,11 +1,12 @@
 import { useEffect } from 'react';
 import { useGameStore } from '../stores/gameStore';
 import { sessionRate } from '../game/sessionTiming';
-export function useLiveClock() {
+export function useLiveClock(enabled = true) {
   const paused = useGameStore((s) => s.session.paused);
   const speed = useGameStore((s) => s.session.speed);
   const rate = useGameStore((s) => sessionRate(s.session));
   useEffect(() => {
+    if (!enabled) return;
     const visibility = () => {
       if (document.hidden) useGameStore.getState().setPaused(true);
     };
@@ -16,9 +17,9 @@ export function useLiveClock() {
       document.removeEventListener('visibilitychange', visibility);
       window.removeEventListener('pagehide', flush);
     };
-  }, []);
+  }, [enabled]);
   useEffect(() => {
-    if (paused) return;
+    if (paused || !enabled) return;
     let previous = performance.now();
     let accumulated = 0;
     const timer = window.setInterval(() => {
@@ -32,5 +33,5 @@ export function useLiveClock() {
       }
     }, 250);
     return () => window.clearInterval(timer);
-  }, [paused, speed, rate]);
+  }, [paused, speed, rate, enabled]);
 }

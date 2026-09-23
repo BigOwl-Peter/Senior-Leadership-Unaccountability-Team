@@ -1616,6 +1616,167 @@ svg {
   width: 100%;
   min-width: 0;
 }
+.survey-alert {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 9px 20px;
+  background: #fff4cc;
+  color: #51461d;
+  border-bottom: 1px solid #dfce8c;
+  font-size: 0.875rem;
+}
+.survey-alert button {
+  margin-left: auto;
+}
+.staff-survey h1 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.staff-survey h2 {
+  font-size: 1.2rem;
+  margin-bottom: 12px;
+}
+.staff-survey h3 {
+  font-size: 1.05rem;
+  margin: 12px 0;
+}
+.staff-survey p {
+  line-height: 1.6;
+  margin: 12px 0;
+}
+.survey-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(280px, 1fr);
+  gap: 30px;
+}
+.survey-layout > section {
+  min-width: 0;
+}
+.survey-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 18px 0;
+  border-block: 1px solid var(--border);
+}
+.survey-metrics dt {
+  font-size: 0.875rem;
+}
+.survey-metrics dd {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin: 4px 0 0;
+}
+.survey-bands {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 16px 0;
+  font-size: 0.875rem;
+}
+.survey-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 20px 0;
+}
+.survey-filters label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.staff-survey table {
+  min-width: 520px;
+}
+.staff-survey .table-scroll {
+  max-height: 360px;
+  overflow: auto;
+}
+.survey-jump {
+  display: flex;
+  margin: 12px 0;
+}
+.staff-survey caption {
+  text-align: left;
+  margin-bottom: 10px;
+  font-size: 0.875rem;
+}
+.staff-survey td,
+.staff-survey th {
+  font-size: 0.875rem;
+}
+.staff-survey small {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 400;
+  margin-top: 4px;
+  line-height: 1.5;
+}
+.survey-presentation {
+  border-left: 1px solid var(--border);
+  padding-left: 24px;
+}
+.survey-presentation fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.survey-presentation legend {
+  font-size: 0.875rem;
+  margin-bottom: 10px;
+}
+.survey-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+.survey-option input {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin-top: 3px;
+}
+.survey-draft {
+  border-left: 3px solid #318366;
+  padding: 4px 16px;
+  margin: 20px 0;
+  background: #f1f8f4;
+}
+.survey-draft > span {
+  font-size: 0.8rem;
+  color: #346854;
+}
+.survey-review {
+  border-top: 1px solid var(--border);
+  margin-top: 20px;
+  padding-top: 14px;
+}
+.survey-methodology {
+  margin: 20px 0;
+  font-size: 0.875rem;
+}
+.survey-methodology summary {
+  cursor: pointer;
+}
+@media (max-width: 1100px) {
+  .survey-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .survey-presentation {
+    border-left: 0;
+    border-top: 1px solid var(--border);
+    padding: 20px 0 0;
+  }
+}
 .company-heading {
   border-bottom: 1px solid var(--border);
   padding-bottom: 22px;

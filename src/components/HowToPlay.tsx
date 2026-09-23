@@ -81,6 +81,13 @@ export function HowToPlay() {
         </p>
         <h3>Take a breather</h3>
         <p>
+          Partway through your career, HR releases the Staff Survey. Review
+          individual stress, morale and engagement, then approve a board
+          presentation before the deadline. Positive spin can win approval but
+          damage trust; a later review may expose it. Funding improvements
+          changes working conditions, not the original results.
+        </p>
+        <p>
           Start shift begins the clock. Pause freezes deadlines; 2x and 4x make
           time pass faster. The logo returns to the splash screen and pauses
           play. Restart Career replaces your current run but keeps completed

@@ -2,6 +2,8 @@ import type { DepartmentId } from '../models/game';
 import type { LiveRequest, LiveSession, TeamMessage } from '../models/live';
 import { createGame } from './generate';
 import { businessWeek, tickOrganisation } from './organisation';
+import { tickStaffSurvey } from './staffSurvey';
+import { tickWorld } from '../world/engine';
 import { chooseResponse, processTurn } from './engine';
 import { getEvent, events } from '../data/events';
 import {
@@ -459,6 +461,8 @@ export function tickLive(input: LiveSession, seconds = 1): LiveSession {
     }
     if (next.elapsed % 30 === 15) autonomousWork(next);
     tickOrganisation(next);
+    tickStaffSurvey(next);
+    tickWorld(next);
     if (next.elapsed % WEEK_SECONDS === 0) {
       const logLength = next.game.eventHistory.length;
       businessWeek(next);

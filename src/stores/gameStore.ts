@@ -19,7 +19,10 @@ import type { PersonnelAction } from '../game/personnel';
 import { parseLiveSave } from '../game/liveSave';
 import { leadershipScore } from '../game/systems';
 import { startShift } from '../game/sessionTiming';
-const KEY = 'slut-live-save-v2';
+import { publishStaffSurvey, type SurveyMethod } from '../game/staffSurvey';
+import { enterCareer, resolveWorldCase, takeFlight } from '../world/engine';
+import type { Avatar, WorldChoice } from '../world/model';
+const KEY = 'slut-world-save-v1';
 function restore() {
   try {
     const raw = localStorage.getItem(KEY);
@@ -58,6 +61,16 @@ function persist(session: LiveSession, highScores: HighScore[]) {
   }
 }
 interface Store {
+  beginWorld: (
+    avatar: Avatar,
+    team: DepartmentId,
+    name: string,
+    minutes: 10 | 20,
+  ) => void;
+  worldDecision: (id: string, choice: WorldChoice) => void;
+  fly: () => void;
+  movePlayer: (x: number, y: number) => void;
+  publishSurvey: (method: SurveyMethod) => void;
   startShift: (minutes: 10 | 20) => void;
   markChatSeen: () => void;
   answerCase: (id: string, action: CaseAction) => void;
@@ -105,6 +118,37 @@ export const useGameStore = create<Store>((set, get) => {
   }
   return {
     ...restore(),
+    beginWorld: (avatar, team, name, minutes) => {
+      const session = enterCareer(
+        startShift(
+          createLiveSession(`WORLD-${crypto.randomUUID().slice(0, 8)}`),
+          minutes,
+        ),
+        avatar,
+        team,
+        name,
+      );
+      set({ session, notice: persist(session, get().highScores) });
+    },
+    worldDecision: (id, choice) =>
+      update((s) => resolveWorldCase(s, id, choice)),
+    fly: () => update(takeFlight),
+    movePlayer: (x, y) =>
+      update((s) =>
+        !s.world || s.world.flight
+          ? s
+          : {
+              ...s,
+              world: {
+                ...s.world,
+                position: {
+                  x: Math.max(32, Math.min(1248, x)),
+                  y: Math.max(32, Math.min(832, y)),
+                },
+              },
+            },
+      ),
+    publishSurvey: (method) => update((s) => publishStaffSurvey(s, method)),
     startShift: (minutes) => update((s) => startShift(s, minutes)),
     markChatSeen: () =>
       update((s) =>

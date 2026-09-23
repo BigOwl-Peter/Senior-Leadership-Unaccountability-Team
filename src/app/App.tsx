@@ -8,6 +8,7 @@ import {
   CheckCheck,
   ChevronDown,
   ClipboardCheck,
+  ClipboardList,
   Forward,
   Inbox,
   Mail,
@@ -44,8 +45,10 @@ import { useGameAudio } from '../hooks/useGameAudio';
 import { OfficeOverview } from '../components/OfficeOverview';
 import { HowToPlay } from '../components/HowToPlay';
 import { realSeconds } from '../game/sessionTiming';
+import { StaffSurveyView } from '../components/StaffSurveyView';
 import { EmployeeChat, TeamMandate } from '../components/OrganisationViews';
-type View = 'Mail' | 'Chat' | 'Teams' | 'People' | 'Board' | 'Reports';
+type View =
+  'Mail' | 'Chat' | 'Teams' | 'People' | 'Board' | 'Reports' | 'Staff Survey';
 type Folder =
   | 'Inbox'
   | 'Awaiting approval'
@@ -59,6 +62,7 @@ const views: { name: View; icon: LucideIcon }[] = [
   { name: 'People', icon: Building2 },
   { name: 'Board', icon: ClipboardCheck },
   { name: 'Reports', icon: ChartNoAxesCombined },
+  { name: 'Staff Survey', icon: ClipboardList },
 ];
 const folders: { name: Folder; icon: LucideIcon }[] = [
   { name: 'Inbox', icon: Inbox },
@@ -162,14 +166,16 @@ export default function App() {
   );
 }
 
-function Workspace({
+export function Workspace({
   musicButton,
   onHome,
+  runClock = true,
 }: {
   musicButton: React.ReactNode;
   onHome: () => void;
+  runClock?: boolean;
 }) {
-  useLiveClock();
+  useLiveClock(runClock);
   const { session, notice, setPaused, setSpeed, restart, markRead } =
     useGameStore();
   const [view, setView] = useState<View>('Mail');
@@ -211,6 +217,7 @@ function Workspace({
     .filter(
       (message) =>
         view !== 'Chat' &&
+        view !== 'Staff Survey' &&
         message.at > 0 &&
         session.elapsed - message.at < 14 &&
         message.author !== 'you' &&
@@ -398,37 +405,63 @@ function Workspace({
         </div>
       )}
       <OfficeOverview onOpen={() => setView('People')} />
-      <div className="desktop-body">
-        <nav className="app-rail" aria-label="Applications">
-          {views.map(({ name, icon: Icon }) => (
+      {session.staffSurvey &&
+        !session.staffSurvey.method &&
+        view !== 'Staff Survey' && (
+          <div className="survey-alert" role="status">
+            <ClipboardList size={18} />
+            <span>
+              <strong>Staff Survey results are in.</strong> The board wants a
+              positive story.
+            </span>
             <button
-              key={name}
-              aria-current={view === name ? 'page' : undefined}
-              aria-label={name}
               onClick={() => {
-                setView(name);
-                setProfileId(null);
+                setView('Staff Survey');
                 setMobileReader(false);
               }}
             >
-              <span>
-                <Icon size={21} />
-                {name === 'Mail' && unread > 0 && <b>{unread}</b>}
-                {name === 'Chat' && chatUnread > 0 && (
-                  <b aria-label={`${chatUnread} new chat notifications`}>
-                    {chatUnread > 99 ? '99+' : chatUnread}
-                  </b>
-                )}
-              </span>
-              <small>{name}</small>
+              Review results <ArrowRight size={15} />
             </button>
-          ))}
+          </div>
+        )}
+      <div className="desktop-body">
+        <nav className="app-rail" aria-label="Applications">
+          {views
+            .filter(
+              ({ name }) => name !== 'Staff Survey' || session.staffSurvey,
+            )
+            .map(({ name, icon: Icon }) => (
+              <button
+                key={name}
+                aria-current={view === name ? 'page' : undefined}
+                aria-label={name}
+                onClick={() => {
+                  setView(name);
+                  setProfileId(null);
+                  setMobileReader(false);
+                }}
+              >
+                <span>
+                  <Icon size={21} />
+                  {name === 'Mail' && unread > 0 && <b>{unread}</b>}
+                  {name === 'Staff Survey' && !session.staffSurvey?.method && (
+                    <b>1</b>
+                  )}
+                  {name === 'Chat' && chatUnread > 0 && (
+                    <b aria-label={`${chatUnread} new chat notifications`}>
+                      {chatUnread > 99 ? '99+' : chatUnread}
+                    </b>
+                  )}
+                </span>
+                <small>{name}</small>
+              </button>
+            ))}
           <span className="rail-bottom">
             <ShieldCheck size={19} />
           </span>
         </nav>
         <aside
-          className={`folder-sidebar ${view === 'Chat' ? 'chat-sidebar-hidden' : ''}`}
+          className={`folder-sidebar ${view === 'Chat' || view === 'Staff Survey' ? 'chat-sidebar-hidden' : ''}`}
         >
           <div className="account-name">
             <span className="account-avatar">SL</span>
@@ -500,6 +533,7 @@ function Workspace({
           className={`workspace-view ${mobileReader ? 'show-reader' : ''}`}
         >
           {view === 'Chat' && <EmployeeChat />}
+          {view === 'Staff Survey' && <StaffSurveyView />}
           {view === 'Mail' && (
             <>
               <section className="mail-list" aria-label="Inbox">
@@ -781,7 +815,10 @@ function Workspace({
               className="toast-message"
               onClick={() => {
                 if (message.requestId) openRequest(message.requestId);
-                else {
+                else if (message.text.includes('Staff Survey')) {
+                  setView('Staff Survey');
+                  setMobileReader(false);
+                } else {
                   setChannel(message.departmentId);
                   setView('Chat');
                 }

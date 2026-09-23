@@ -3,6 +3,7 @@ import { gameStateSchema } from './save';
 import { conversations } from '../data/teams';
 import { getEvent } from '../data/events';
 import { SESSION_SECONDS, WEEK_SECONDS } from './live';
+import { worldSchema } from '../world/model';
 const department = z.enum([
   'sales',
   'service',
@@ -15,10 +16,36 @@ const department = z.enum([
   'compliance',
 ]);
 const second = z.number().int().min(0).max(SESSION_SECONDS);
+const surveyResponse = z.object({
+  employeeId: z.string(),
+  name: z.string(),
+  departmentId: department,
+  officeId: z.enum(['albion', 'continental']),
+  morale: z.number().int().min(0).max(100),
+  stress: z.number().int().min(0).max(100),
+  engagement: z.number().int().min(0).max(100),
+});
 export const liveSaveSchema = z.object({
   schemaVersion: z.literal(2),
   session: z.object({
     game: gameStateSchema,
+    world: worldSchema.optional(),
+    staffSurvey: z
+      .object({
+        openedAt: second,
+        deadline: second,
+        responses: z.array(surveyResponse).max(1000),
+        method: z
+          .enum(['unfiltered', 'reframe', 'selective', 'invest'])
+          .optional(),
+        publishedAt: second.optional(),
+        automatic: z.boolean().optional(),
+        reviewAt: second.optional(),
+        reviewedAt: second.optional(),
+        outcome: z.string().optional(),
+        followUp: z.array(surveyResponse).max(1000).optional(),
+      })
+      .optional(),
     organisation: z
       .object({
         teams: z
@@ -128,6 +155,40 @@ export function parseLiveSave(text: string) {
   const save = liveSaveSchema.parse(JSON.parse(text));
   const { session } = save;
   const { game } = session;
+  const survey = session.staffSurvey;
+  if (survey) {
+    const published = survey.method !== undefined;
+    const reviewed = survey.reviewedAt !== undefined;
+    if (
+      survey.openedAt > session.elapsed ||
+      survey.deadline !== survey.openedAt + 120 ||
+      published !== (survey.publishedAt !== undefined) ||
+      published !== (survey.reviewAt !== undefined) ||
+      (!published &&
+        (session.elapsed >= survey.deadline ||
+          reviewed ||
+          survey.automatic !== undefined)) ||
+      (published &&
+        (survey.publishedAt! < survey.openedAt ||
+          survey.publishedAt! > Math.min(session.elapsed, survey.deadline) ||
+          survey.reviewAt !== survey.publishedAt! + 180)) ||
+      (survey.automatic &&
+        (survey.method !== 'unfiltered' ||
+          survey.publishedAt !== survey.deadline)) ||
+      reviewed !== (survey.outcome !== undefined) ||
+      reviewed !== (survey.followUp !== undefined) ||
+      (reviewed &&
+        (!published ||
+          survey.reviewedAt! < survey.reviewAt! ||
+          survey.reviewedAt! > session.elapsed)) ||
+      [survey.responses, survey.followUp ?? []].some(
+        (rows) =>
+          new Set(rows.map((r) => r.employeeId)).size !== rows.length ||
+          rows.some((r) => !game.employees.some((e) => e.id === r.employeeId)),
+      )
+    )
+      throw new Error('Invalid staff survey state.');
+  }
   if (session.organisation) {
     const org = session.organisation;
     if (

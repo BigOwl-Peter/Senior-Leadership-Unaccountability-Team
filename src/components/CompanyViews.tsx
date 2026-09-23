@@ -11,6 +11,7 @@ import { money, millions, number } from '../utils/format';
 import { TrendChart } from './TrendChart';
 import { PeopleOffice } from './PeopleOffice';
 import { BusinessPressure } from './OrganisationViews';
+import { surveyPresentation } from '../game/staffSurvey';
 export function CompanyViews({
   view,
   initialEmployeeId,
@@ -78,6 +79,23 @@ export function CompanyViews({
             ))}
           </div>
           <h2>Leadership assessment</h2>
+          {session.staffSurvey?.method && (
+            <section className="survey-review">
+              <h3>Staff Survey</h3>
+              <p>
+                {
+                  surveyPresentation(
+                    session.staffSurvey,
+                    session.staffSurvey.method,
+                  ).headline
+                }
+              </p>
+              <p>
+                {session.staffSurvey.outcome ??
+                  'HR follow-up pending. The original responses remain on file.'}
+              </p>
+            </section>
+          )}
           <p>Current score: {number(leadershipScore(game))} / 6,000</p>
           <p>
             Decision speed: {decisionSpeedScore(game) >= 0 ? '+' : ''}
