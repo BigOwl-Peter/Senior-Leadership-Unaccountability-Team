@@ -60,7 +60,7 @@ export function generateCandidates(seed: string, turn: number): Candidate[] {
     const employee = generateEmployee(
       seed,
       `candidate-${turn}-${index}`,
-      departmentDefinitions[(turn + index) % 9].id,
+      departmentDefinitions[(turn + index) % departmentDefinitions.length].id,
       'albion',
     );
     const rng = randomFor(seed, `interview-${turn}-${index}`);

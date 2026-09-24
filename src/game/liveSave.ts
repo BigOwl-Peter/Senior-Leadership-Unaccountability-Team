@@ -4,6 +4,7 @@ import { conversations } from '../data/teams';
 import { getEvent } from '../data/events';
 import { SESSION_SECONDS, WEEK_SECONDS } from './live';
 import { worldSchema } from '../world/model';
+import { expandTeams } from './expandTeams';
 const department = z.enum([
   'sales',
   'service',
@@ -14,8 +15,10 @@ const department = z.enum([
   'hr',
   'it',
   'compliance',
+  'bdm',
+  'specialists',
 ]);
-const second = z.number().int().min(0).max(SESSION_SECONDS);
+const second = z.number().int().nonnegative();
 const surveyResponse = z.object({
   employeeId: z.string(),
   name: z.string(),
@@ -58,23 +61,21 @@ export const liveSaveSchema = z.object({
               week: z.number().int().positive(),
             }),
           )
-          .max(9),
-        cases: z
-          .array(
-            z.object({
-              id: z.string(),
-              employeeId: z.string(),
-              departmentId: department,
-              topic: z.number().int().min(0).max(11),
-              opened: second,
-              due: second,
-              status: z.enum(['open', 'owned', 'resolved', 'escalated']),
-              action: z.enum(['support', 'team', 'dismiss']).optional(),
-              supportCost: z.number().int().min(0).max(15000).optional(),
-              outcome: z.string().optional(),
-            }),
-          )
-          .max(100),
+          .max(11),
+        cases: z.array(
+          z.object({
+            id: z.string(),
+            employeeId: z.string(),
+            departmentId: department,
+            topic: z.number().int().min(0).max(11),
+            opened: second,
+            due: second,
+            status: z.enum(['open', 'owned', 'resolved', 'escalated']),
+            action: z.enum(['support', 'team', 'dismiss']).optional(),
+            supportCost: z.number().int().min(0).max(15000).optional(),
+            outcome: z.string().optional(),
+          }),
+        ),
         backlog: z.number().min(0).max(300),
         defects: z.number().min(0).max(100),
         exposure: z.number().min(0).max(100),
@@ -84,7 +85,7 @@ export const liveSaveSchema = z.object({
       .optional(),
     elapsed: second,
     durationMinutes: z.union([z.literal(10), z.literal(20)]).default(20),
-    chatSeenThrough: z.number().int().min(0).max(1500).optional(),
+    chatSeenThrough: z.number().int().min(0).optional(),
     paused: z.boolean(),
     speed: z.union([z.literal(1), z.literal(2), z.literal(4)]),
     nextArrival: z.number().int().nonnegative(),
@@ -117,28 +118,25 @@ export const liveSaveSchema = z.object({
           senderName: z.string().optional(),
         }),
       )
-      .min(1)
-      .max(100),
-    messages: z
-      .array(
-        z.object({
-          id: z.string(),
-          requestId: z.string().optional(),
-          departmentId: department,
-          author: z.union([department, z.literal('you'), z.literal('system')]),
-          authorName: z.string().optional(),
-          text: z.string(),
-          at: second,
-          kind: z.enum([
-            'request',
-            'chat',
-            'decision',
-            'escalation',
-            'autonomous',
-          ]),
-        }),
-      )
-      .max(1500),
+      .min(1),
+    messages: z.array(
+      z.object({
+        id: z.string(),
+        requestId: z.string().optional(),
+        departmentId: department,
+        author: z.union([department, z.literal('you'), z.literal('system')]),
+        authorName: z.string().optional(),
+        text: z.string(),
+        at: second,
+        kind: z.enum([
+          'request',
+          'chat',
+          'decision',
+          'escalation',
+          'autonomous',
+        ]),
+      }),
+    ),
   }),
   highScores: z
     .array(
@@ -154,7 +152,18 @@ export const liveSaveSchema = z.object({
 export function parseLiveSave(text: string) {
   const save = liveSaveSchema.parse(JSON.parse(text));
   const { session } = save;
+  expandTeams(session);
   const { game } = session;
+  if (session.world && !game.continuous) {
+    game.continuous = true;
+    game.turn = Math.floor(session.elapsed / WEEK_SECONDS) + 1;
+    game.status =
+      game.metrics.accountability >= 100 || game.metrics.turnover <= 0
+        ? 'finished'
+        : 'running';
+    session.durationMinutes = 20;
+    session.paused = true;
+  }
   const survey = session.staffSurvey;
   if (survey) {
     const published = survey.method !== undefined;
@@ -192,8 +201,8 @@ export function parseLiveSave(text: string) {
   if (session.organisation) {
     const org = session.organisation;
     if (
-      org.teams.length !== 9 ||
-      new Set(org.teams.map((t) => t.id)).size !== 9 ||
+      org.teams.length !== 11 ||
+      new Set(org.teams.map((t) => t.id)).size !== 11 ||
       new Set(org.cases.map((c) => c.id)).size !== org.cases.length ||
       org.cases.some(
         (c) =>
@@ -206,13 +215,23 @@ export function parseLiveSave(text: string) {
   }
   if (
     game.activeEvents.length ||
-    game.turn !==
-      Math.min(20, Math.floor(session.elapsed / WEEK_SECONDS) + 1) ||
-    (game.status === 'finished') !== (session.elapsed === SESSION_SECONDS)
+    (!game.continuous &&
+      (game.turn !==
+        Math.min(20, Math.floor(session.elapsed / WEEK_SECONDS) + 1) ||
+        (game.status === 'finished') !==
+          (session.elapsed === SESSION_SECONDS))) ||
+    (game.continuous &&
+      (!session.world ||
+        (game.turn !== Math.floor(session.elapsed / WEEK_SECONDS) + 1 &&
+          !(
+            game.status === 'finished' &&
+            session.elapsed % WEEK_SECONDS === 0 &&
+            game.turn === Math.floor(session.elapsed / WEEK_SECONDS)
+          ))))
   )
     throw new Error('Inconsistent clock state.');
   if (
-    new Set(game.departments.map((d) => d.id)).size !== 9 ||
+    new Set(game.departments.map((d) => d.id)).size !== 11 ||
     new Set(game.offices.map((o) => o.id)).size !== 2 ||
     new Set(game.employees.map((e) => e.id)).size !== game.employees.length
   )

@@ -260,7 +260,7 @@ export function processTurn(input: GameState): GameState {
     title: `Week ${state.turn} filed`,
     description: `Annualised turnover ${state.metrics.turnover >= state.metrics.previousTurnover ? 'increased' : 'declined'}. ${state.customers.complaintBacklog} complaints remain open.`,
   });
-  if (state.turn === state.maxTurns) {
+  if (!state.continuous && state.turn === state.maxTurns) {
     state.status = 'finished';
     state.activeEvents = [];
   } else {

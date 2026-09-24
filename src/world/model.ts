@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { logisticsSchema } from './logistics';
+import { politicsSchema } from './politics';
 const office = z.enum(['albion', 'continental']);
 const department = z.enum([
   'sales',
@@ -10,15 +12,19 @@ const department = z.enum([
   'hr',
   'it',
   'compliance',
+  'bdm',
+  'specialists',
 ]);
 export const worldSchema = z.object({
+  logistics: logisticsSchema.optional(),
+  politics: politicsSchema.optional(),
   avatar: z.enum(['fixer', 'operator', 'diplomat', 'auditor']),
   name: z.string().min(1).max(40),
   team: department,
   office,
   position: z.object({
-    x: z.number().min(32).max(1248),
-    y: z.number().min(32).max(832),
+    x: z.number().min(32).max(1568),
+    y: z.number().min(32).max(1024),
   }),
   corruption: z.object({
     albion: z.number().min(0).max(100),
@@ -29,7 +35,7 @@ export const worldSchema = z.object({
   nextMD: z.number().int().nonnegative(),
   serial: z.number().int().nonnegative(),
   flight: z
-    .object({ to: office, arrives: z.number().int().min(0).max(1200) })
+    .object({ to: office, arrives: z.number().int().nonnegative() })
     .optional(),
   visits: z.object({
     albion: z.number().int().nonnegative(),
@@ -45,7 +51,7 @@ export const worldSchema = z.object({
         employeeId: z.string(),
         departmentId: department,
         opened: z.number().int().nonnegative(),
-        due: z.number().int().max(1200),
+        due: z.number().int().nonnegative(),
         choice: z.enum(['comply', 'document', 'refuse', 'expired']).optional(),
         outcome: z.string().optional(),
       }),

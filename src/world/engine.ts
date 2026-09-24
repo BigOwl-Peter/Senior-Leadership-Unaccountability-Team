@@ -3,6 +3,8 @@ import type { LiveSession } from '../models/live';
 import { applyEffects } from '../game/effects';
 import { clamp } from '../game/systems';
 import { randomFor } from '../game/random';
+import { createLogistics, tickLogistics } from './logistics';
+import { createPolitics, tickPolitics } from './politics';
 import {
   characters,
   mdName,
@@ -22,6 +24,8 @@ export function enterCareer(
   if (!character || !s.game.departments.some((d) => d.id === team))
     throw new Error('Choose a character and team.');
   s.world = {
+    logistics: createLogistics(),
+    politics: createPolitics(),
     avatar,
     name: name.trim().slice(0, 40) || character.name,
     team,
@@ -37,6 +41,9 @@ export function enterCareer(
     log: [],
   };
   s.game.metrics.accountability = 15;
+  s.game.continuous = true;
+  s.durationMinutes = 20;
+  s.nextArrival = 65;
   s.game.offices = [
     { id: 'albion', name: 'London / UK', location: 'United Kingdom' },
     { id: 'continental', name: 'Cape Town / SA', location: 'South Africa' },
@@ -76,7 +83,7 @@ function addCase(
     employeeId: kind === 'md' ? 'md' : employee!.id,
     departmentId: team ?? employee?.departmentId ?? 'operations',
     opened: s.elapsed,
-    due: Math.min(1200, s.elapsed + (kind === 'md' ? 90 : 150)),
+    due: s.elapsed + (kind === 'md' ? 90 : 150),
   };
   w.cases = [...w.cases, item].slice(-50);
   const title = scriptFor(item)[0];
@@ -98,6 +105,9 @@ function addCase(
 export function tickWorld(s: LiveSession) {
   const w = s.world;
   if (!w) return;
+  tickPolitics(s);
+  tickLogistics(s);
+  if (s.game.status === 'finished') return;
   if (w.flight && s.elapsed >= w.flight.arrives) {
     w.office = w.flight.to;
     w.position = { x: 640, y: 704 };
@@ -142,7 +152,7 @@ export function tickWorld(s: LiveSession) {
     if (w.mdFavor < 20)
       applyEffects(s.game, [{ type: 'ACCOUNTABILITY', amount: 3 }]);
   }
-  if (s.elapsed >= w.nextLocal && s.elapsed < 1080) {
+  if (s.elapsed >= w.nextLocal) {
     const office =
       Math.floor(s.elapsed / 75) % 2 === 0 ? 'continental' : 'albion';
     if (
@@ -153,10 +163,18 @@ export function tickWorld(s: LiveSession) {
       addCase(s, 'local', office);
     w.nextLocal = s.elapsed + 75;
   }
-  if (s.elapsed >= w.nextMD && s.elapsed < 1100) {
+  if (s.elapsed >= w.nextMD) {
     addCase(s, 'md', w.office);
     w.nextMD = s.elapsed + 115;
   }
+}
+export function checkCareerFailure(s: LiveSession) {
+  if (!s.game.continuous) return false;
+  if (s.game.metrics.accountability >= 100 || s.game.metrics.turnover <= 0) {
+    s.game.status = 'finished';
+    s.paused = true;
+  }
+  return s.game.status === 'finished';
 }
 export function worldChoiceEffects(
   s: LiveSession,
@@ -246,6 +264,7 @@ export function resolveWorldCase(
     title: scriptFor(item)[0],
     description: current.outcome,
   });
+  checkCareerFailure(s);
   return s;
 }
 export function takeFlight(input: LiveSession) {
@@ -254,8 +273,6 @@ export function takeFlight(input: LiveSession) {
     throw new Error('No flight available.');
   if (Math.hypot(w.position.x - 1056, w.position.y - 720) > 115)
     throw new Error('Walk to the travel desk first.');
-  if (input.elapsed > 1160)
-    throw new Error('No departures this close to the end of your appointment.');
   if (input.game.company.cash - input.game.company.pendingCosts < 2500)
     throw new Error('Not enough cash for the flight.');
   const s = structuredClone(input);

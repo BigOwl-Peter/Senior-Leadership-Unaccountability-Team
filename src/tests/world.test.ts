@@ -71,7 +71,8 @@ describe('corporate world career', () => {
     expect(progressed.game.metrics.accountability).toBeGreaterThan(15);
     const end = tickLive(progressed, 1080);
     expect(end.game.status).toBe('finished');
-    expect(end.world!.cases.every((c) => c.choice)).toBe(true);
+    expect(end.game.metrics.accountability).toBe(100);
+    expect(end.elapsed).toBeLessThan(1200);
     expect(
       parseLiveSave(
         JSON.stringify({ schemaVersion: 2, session: end, highScores: [] }),
@@ -82,5 +83,54 @@ describe('corporate world career', () => {
     let small = career();
     for (let i = 0; i < 200; i++) small = tickLive(small, 1);
     expect(small).toEqual(tickLive(career(), 200));
+  });
+  it('continues beyond week 20 with events, travel and a reloadable save', () => {
+    let s = career();
+    // Keep a healthy company to isolate calendar limits from failure rules.
+    for (let i = 0; i < 1325; i++) {
+      s.game.metrics.accountability = 0;
+      s.game.metrics.turnover = 20000000;
+      s = tickLive(s);
+    }
+    expect(s.elapsed).toBe(1325);
+    expect(s.game.status).toBe('running');
+    expect(s.game.turn).toBe(23);
+    expect(s.world!.cases.some((c) => c.opened > 1200)).toBe(true);
+    expect(s.requests.some((r) => r.createdAt > 1200)).toBe(true);
+    s.world!.position = { x: 1056, y: 720 };
+    s = takeFlight(s);
+    expect(s.world!.flight!.arrives).toBe(1355);
+    expect(
+      parseLiveSave(
+        JSON.stringify({ schemaVersion: 2, session: s, highScores: [] }),
+      ).session,
+    ).toEqual(s);
+  });
+  it('fails on either threshold, but zero accountability is not a timed victory', () => {
+    for (const metric of ['accountability', 'turnover'] as const) {
+      const s = career();
+      s.game.metrics[metric] = metric === 'accountability' ? 100 : 0;
+      const ended = tickLive(s, 20);
+      expect(ended.game.status).toBe('finished');
+      expect(ended.elapsed).toBe(0);
+      expect(ended.paused).toBe(true);
+    }
+    const s = career();
+    s.game.metrics.accountability = 0;
+    expect(tickLive(s).game.status).toBe('running');
+  });
+  it('migrates an old time-completed world without deleting the career', () => {
+    const s = career();
+    delete s.game.continuous;
+    s.elapsed = 1200;
+    s.game.turn = 20;
+    s.game.status = 'finished';
+    const restored = parseLiveSave(
+      JSON.stringify({ schemaVersion: 2, session: s, highScores: [] }),
+    ).session;
+    expect(restored.game.status).toBe('running');
+    expect(restored.game.turn).toBe(21);
+    expect(restored.game.continuous).toBe(true);
+    expect(restored.paused).toBe(true);
   });
 });

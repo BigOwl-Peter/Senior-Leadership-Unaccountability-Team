@@ -2,14 +2,15 @@ import Phaser from 'phaser';
 import EasyStar from 'easystarjs';
 import type { LiveSession } from '../models/live';
 import { characters, chatter, mdName, mdOffice, offices } from './model';
-import { spriteCanvas } from './art';
+import { spriteCanvas, radishCanvas } from './art';
+import { meetingPoint, ceoPoint } from './politics';
 
 export interface Target {
   id: string;
   name: string;
   x: number;
   y: number;
-  kind: 'person' | 'travel' | 'laptop';
+  kind: 'person' | 'travel' | 'laptop' | 'stock' | 'meeting' | 'ceo';
 }
 export interface SceneBridge {
   getSession: () => LiveSession;
@@ -32,7 +33,7 @@ export class OfficeScene extends Phaser.Scene {
     index: number;
   }[] = [];
   private obstacles!: Phaser.Physics.Arcade.StaticGroup;
-  private grid = Array.from({ length: 27 }, () => Array<number>(40).fill(0));
+  private grid = Array.from({ length: 33 }, () => Array<number>(50).fill(0));
   private finder = new EasyStar.js();
   private path: { x: number; y: number }[] = [];
   private pending: string | null = null;
@@ -71,12 +72,12 @@ export class OfficeScene extends Phaser.Scene {
     const obstacle = this.add.rectangle(x + w / 2, y + h / 2, w, h, 0, 0);
     this.physics.add.existing(obstacle, true);
     this.obstacles.add(obstacle);
-    for (let cy = 0; cy < 27; cy++)
-      for (let cx = 0; cx < 40; cx++)
+    for (let cy = 0; cy < 33; cy++)
+      for (let cx = 0; cx < 50; cx++)
         if (
           cx * 32 + 16 > x - 10 &&
           cx * 32 + 16 < x + w + 10 &&
-          cy * 32 + 16 > y - 10 &&
+          cy * 32 + 16 > y - 26 &&
           cy * 32 + 16 < y + h + 10
         )
           this.grid[cy][cx] = 1;
@@ -119,7 +120,7 @@ export class OfficeScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(
       this.office === 'albion' ? '#49685d' : '#69876a',
     );
-    this.physics.world.setBounds(32, 32, 1216, 800);
+    this.physics.world.setBounds(32, 32, 1536, 992);
     this.obstacles = this.physics.add.staticGroup();
     this.floor = this.add.graphics().setDepth(0);
     this.rect(
@@ -129,8 +130,8 @@ export class OfficeScene extends Phaser.Scene {
       800,
       this.office === 'albion' ? 0x7c9387 : 0x94a173,
     );
-    for (let x = 0; x < 1280; x += 32)
-      for (let y = 0; y < 864; y += 32) {
+    for (let x = 0; x < 1600; x += 32)
+      for (let y = 0; y < 1056; y += 32) {
         if ((x / 32 + y / 32) % 2 === 0)
           this.rect(
             x,
@@ -171,6 +172,37 @@ export class OfficeScene extends Phaser.Scene {
     }
     this.rect(58, 68, 1170, 742, 0x203e4044);
     this.rect(64, 72, 1152, 728, 0xe8e9dd);
+    this.rect(1216, 84, 320, 716, south ? 0xc8d5c2 : 0xc8d5df);
+    this.rect(64, 800, 1472, 224, south ? 0xdbd6c3 : 0xd3dbdc);
+    this.rect(1240, 110, 270, 258, south ? 0x90b9a9 : 0x9cb6c7);
+    this.rect(1240, 438, 270, 320, south ? 0xd6bd97 : 0xbdb0c5);
+    this.rect(1030, 820, 486, 188, 0xd7bcc6);
+    this.wall(1216, 72, 332, 12);
+    this.wall(1536, 72, 12, 952);
+    this.wall(64, 800, 12, 224);
+    this.wall(64, 1012, 1484, 12);
+    this.label(1370, 132, 'BUSINESS DEVELOPMENT', 12);
+    this.label(1370, 454, 'SPECIALISTS / LAB', 12);
+    this.label(1260, 842, 'PARENT COMPANY / CEO TEAM', 14, '#704354');
+    this.label(
+      590,
+      940,
+      south
+        ? 'CAPE TERRACE / INFORMAL ALIGNMENT'
+        : 'THE LONG CORRIDOR OF RESPONSIBILITY',
+      15,
+    );
+    for (const x of [1280, 1415]) {
+      this.desk(x, 170);
+      this.desk(x, 485);
+    }
+    this.rect(1080, 873, 175, 56, 0x9c657b);
+    this.solid(1080, 873, 175, 56);
+    for (const x of [240, 540, 820]) {
+      this.rect(x, 858, 98, 34, south ? 0x639983 : 0x637f9a);
+      this.solid(x, 858, 98, 34);
+      this.plant(x + 130, 867);
+    }
     for (let x = 64; x < 1216; x += 32)
       for (let y = 80; y < 800; y += 32) {
         this.floor.lineStyle(1, 0xcdd5cd, 0.45);
@@ -190,7 +222,8 @@ export class OfficeScene extends Phaser.Scene {
     this.rect(916, 664, 284, 118, 0xd9c5a0);
     this.wall(64, 72, 1152, 12);
     this.wall(64, 72, 12, 728);
-    this.wall(1204, 72, 12, 728);
+    this.wall(1204, 72, 12, 262);
+    this.wall(1204, 426, 12, 362);
     this.wall(64, 788, 530, 12);
     this.wall(686, 788, 530, 12);
     this.wall(428, 84, 12, 250);
@@ -292,9 +325,23 @@ export class OfficeScene extends Phaser.Scene {
           this.rect(108 + col * 184, 430 + row * 106, 94, 5, 0x687f96);
         else if (row === 0) this.plant(226 + col * 184, 468);
       }
-    this.rect(128, 691, 150, 36, 0xd9be8c);
-    this.solid(128, 691, 150, 36);
-    this.label(240, 759, 'RECEPTION', 12);
+    this.rect(80, 650, 425, 132, south ? 0xb9cbb4 : 0xbdc8d1);
+    this.label(
+      220,
+      665,
+      south ? 'CAPE DISPATCH / STOCK ROOM' : 'LONDON STORES / DISPATCH',
+      11,
+    );
+    for (const y of [687, 734]) {
+      this.rect(105, y, 178, 30, 0x5d7280);
+      this.solid(105, y, 178, 30);
+      for (let x = 112; x < 280; x += 33) {
+        this.rect(x, y + 3, 25, 22, south ? 0xc7ab74 : 0xbfa591);
+        this.rect(x + 11, y + 3, 3, 22, 0xe7dbb9);
+      }
+    }
+    this.rect(439, 690, 45, 62, 0xe2ca78);
+    this.label(462, 766, 'OUT', 10);
     this.rect(980, 675, 160, 33, 0x384f5e);
     this.label(
       1060,
@@ -326,6 +373,8 @@ export class OfficeScene extends Phaser.Scene {
           spriteCanvas(p, f, p.id === 'md'),
         );
       }
+    for (let f = 0; f < 4; f++)
+      this.textures.addCanvas(`radish-${f}`, radishCanvas(f));
     const s = this.bridge.getSession(),
       w = s.world;
     this.player = this.physics.add
@@ -350,16 +399,30 @@ export class OfficeScene extends Phaser.Scene {
         ['active', 'notice', 'absent'].includes(e.status),
     );
     people.forEach((e, i) => {
+      const logistics = e.departmentId === 'logistics';
       const pod = i % 12,
         extra = Math.floor(i / 12),
-        x = 155 + (pod % 6) * 184 + (extra === 1 ? 38 : extra === 2 ? -25 : 0),
+        x = ['bdm', 'specialists'].includes(e.departmentId)
+          ? 1330 + (i % 2) * 110
+          : 155 + (pod % 6) * 184 + (extra === 1 ? 38 : extra === 2 ? -25 : 0),
         y =
-          505 +
-          Math.floor(pod / 6) * 106 +
-          (extra === 1 ? 13 : extra === 2 ? -5 : 0);
+          (e.departmentId === 'bdm'
+            ? 260
+            : e.departmentId === 'specialists'
+              ? 560
+              : 505 +
+                Math.floor(pod / 6) * 106 +
+                (extra === 1 ? 13 : extra === 2 ? -5 : 0)) +
+          (['bdm', 'specialists'].includes(e.departmentId)
+            ? Math.floor(i / 11) * 22
+            : 0);
       const palette = characters[i % 4];
       const sprite = this.add
-        .sprite(x, y, `${palette.id}-0`)
+        .sprite(
+          logistics ? 330 + (i % 3) * 42 : x,
+          logistics ? 720 : y,
+          `${palette.id}-0`,
+        )
         .setDepth(y)
         .setInteractive({ useHandCursor: true });
       const label = this.label(x, y + 29, e.firstName, 10, '#415456');
@@ -383,8 +446,8 @@ export class OfficeScene extends Phaser.Scene {
         bubble,
         marker,
         id: e.id,
-        x,
-        y,
+        x: logistics ? 330 + (i % 3) * 42 : x,
+        y: logistics ? 720 : y,
         index: i,
       });
       sprite.on(
@@ -440,12 +503,65 @@ export class OfficeScene extends Phaser.Scene {
       },
     );
     this.targets = [
+      {
+        id: 'meeting',
+        name: 'S.L.U.T. meeting room',
+        ...meetingPoint(this.office),
+        kind: 'meeting',
+      },
+      { id: 'ceo', name: 'CEO Team / Radish', ...ceoPoint, kind: 'ceo' },
       { id: 'travel', name: 'Travel desk', x: 1056, y: 720, kind: 'travel' },
-      { id: 'laptop', name: 'Your laptop', x: 304, y: 726, kind: 'laptop' },
+      { id: 'laptop', name: 'Your laptop', x: 552, y: 726, kind: 'laptop' },
+      {
+        id: 'stock',
+        name: 'Stock and dispatch',
+        x: 420,
+        y: 720,
+        kind: 'stock',
+      },
     ];
-    this.rect(295, 718, 25, 16, 0x344b57);
-    this.rect(298, 720, 19, 10, 0x89bfc2);
-    this.label(307, 750, 'LAPTOP', 10);
+    for (const [id, name, x, y, index] of [
+      ['ceo-radish', 'RADISH / CEO TEAM', 1395, 907, 100],
+      ['ceo-ledger', 'LEDGER / ASSURANCE', 1300, 964, 101],
+      ['ceo-velvet', 'VELVET / STRATEGY', 1480, 964, 102],
+    ] as const) {
+      const sprite = this.add
+        .sprite(
+          x,
+          y,
+          id === 'ceo-radish' ? 'radish-0' : `${characters[index % 4].id}-0`,
+        )
+        .setInteractive({ useHandCursor: true });
+      const label = this.label(x, y + 30, name, 10, '#79495c');
+      const bubble = this.add
+        .text(x, y - 45, '', {
+          fontFamily: 'Arial',
+          fontSize: '12px',
+          color: '#573348',
+          backgroundColor: '#fff1ef',
+          padding: { x: 8, y: 6 },
+          wordWrap: { width: 180 },
+        })
+        .setOrigin(0.5, 1)
+        .setDepth(1800);
+      const marker = this.label(x, y - 32, '!', 20, '#9e4436');
+      this.actors.push({ id, sprite, label, bubble, marker, x, y, index });
+      sprite.on(
+        'pointerdown',
+        (
+          _p: unknown,
+          _x: unknown,
+          _y: unknown,
+          event: Phaser.Types.Input.EventData,
+        ) => {
+          event.stopPropagation();
+          this.find('ceo');
+        },
+      );
+    }
+    this.rect(540, 718, 25, 16, 0x344b57);
+    this.rect(543, 720, 19, 10, 0x89bfc2);
+    this.label(552, 702, 'LAPTOP', 10);
     this.keys = this.input.keyboard!.addKeys(
       'W,A,S,D,UP,DOWN,LEFT,RIGHT,E',
       false,
@@ -461,7 +577,7 @@ export class OfficeScene extends Phaser.Scene {
       (_p: unknown, _g: unknown, _dx: number, dy: number) =>
         this.zoom(dy > 0 ? -0.1 : 0.1),
     );
-    this.cameras.main.setBounds(0, 0, 1280, 864);
+    this.cameras.main.setBounds(0, 0, 1600, 1056);
     this.cameras.main.startFollow(this.player, true, 0.15, 0.15);
     this.resize();
     this.scale.on('resize', this.resize, this);
@@ -470,11 +586,7 @@ export class OfficeScene extends Phaser.Scene {
     );
   }
   private resize() {
-    this.cameras.main.setZoom(
-      this.scale.width < 700
-        ? 0.85
-        : Math.min(1.15, this.scale.width / 1320, this.scale.height / 880),
-    );
+    this.cameras.main.setZoom(this.scale.width < 700 ? 0.85 : 0.95);
   }
   zoom(amount: number) {
     this.cameras.main.setZoom(
@@ -485,7 +597,7 @@ export class OfficeScene extends Phaser.Scene {
     return [
       ...this.targets,
       ...this.actors
-        .filter((a) => a.sprite.visible)
+        .filter((a) => a.sprite.visible && !a.id.startsWith('ceo-'))
         .map((a) => ({
           id: a.id,
           name:
@@ -519,17 +631,17 @@ export class OfficeScene extends Phaser.Scene {
   walk(x: number, y: number, pending: string | null = null) {
     if (this.bridge.blocked()) return;
     const start = {
-      x: Phaser.Math.Clamp(Math.floor(this.player.x / 32), 0, 39),
-      y: Phaser.Math.Clamp(Math.floor(this.player.y / 32), 0, 26),
+      x: Phaser.Math.Clamp(Math.floor(this.player.x / 32), 0, 49),
+      y: Phaser.Math.Clamp(Math.floor(this.player.y / 32), 0, 32),
     };
     let end = {
-      x: Phaser.Math.Clamp(Math.floor(x / 32), 0, 39),
-      y: Phaser.Math.Clamp(Math.floor(y / 32), 0, 26),
+      x: Phaser.Math.Clamp(Math.floor(x / 32), 0, 49),
+      y: Phaser.Math.Clamp(Math.floor(y / 32), 0, 32),
     };
     if (this.grid[end.y][end.x]) {
       const cells: { x: number; y: number; d: number }[] = [];
-      for (let cy = 2; cy < 25; cy++)
-        for (let cx = 2; cx < 38; cx++)
+      for (let cy = 2; cy < 31; cy++)
+        for (let cx = 2; cx < 48; cx++)
           if (!this.grid[cy][cx])
             cells.push({
               x: cx,
@@ -605,15 +717,19 @@ export class OfficeScene extends Phaser.Scene {
     ring.setPosition(this.player.x, this.player.y + 20);
     for (const actor of this.actors) {
       const employee = s.game.employees.find((e) => e.id === actor.id);
-      const visible =
-        actor.id === 'md'
+      const visible = actor.id.startsWith('ceo-')
+        ? (w?.politics?.ceoOffice ?? 'continental') === this.office
+        : actor.id === 'md'
           ? mdOffice(s.elapsed) === this.office
           : !!employee &&
             employee.officeId === this.office &&
             ['active', 'notice', 'absent'].includes(employee.status);
       actor.sprite.setVisible(visible);
       actor.label.setVisible(
-        visible && (actor.id === this.nearId || actor.id === 'md'),
+        visible &&
+          (actor.id === this.nearId ||
+            actor.id === 'md' ||
+            actor.id === 'ceo-radish'),
       );
       if (!blocked && visible) {
         const drift = Math.sin(time / 1800 + actor.index) * 5;
@@ -621,15 +737,35 @@ export class OfficeScene extends Phaser.Scene {
           actor.x + drift,
           actor.y + Math.cos(time / 2200 + actor.index) * 5,
         );
+        if (
+          employee?.departmentId === 'logistics' &&
+          employee.status !== 'absent'
+        ) {
+          const phase = (time / 1800 + actor.index) % 4;
+          const route = [
+            { x: 320, y: 682 },
+            { x: 410, y: 682 },
+            { x: 410, y: 748 },
+            { x: 320, y: 748 },
+          ];
+          const from = route[Math.floor(phase)],
+            to = route[(Math.floor(phase) + 1) % 4];
+          const f = phase % 1;
+          actor.sprite.setPosition(
+            from.x + (to.x - from.x) * f,
+            from.y + (to.y - from.y) * f,
+          );
+        }
         actor.sprite.setTexture(
-          `${actor.id === 'md' ? 'md' : characters[actor.index % 4].id}-${Math.floor(time / 250 + actor.index) % 4}`,
+          `${actor.id === 'md' ? 'md' : actor.id === 'ceo-radish' ? 'radish' : characters[actor.index % 4].id}-${Math.floor(time / 250 + actor.index) % 4}`,
         );
       }
       actor.sprite.setDepth(actor.sprite.y);
       actor.label.setPosition(actor.sprite.x, actor.sprite.y + 30);
-      const active = w?.cases.find(
-        (c) => c.employeeId === actor.id && !c.choice,
-      );
+      const active =
+        actor.id === 'ceo-radish'
+          ? w?.politics?.order && !w.politics.order.resolved
+          : w?.cases.find((c) => c.employeeId === actor.id && !c.choice);
       actor.marker
         .setVisible(visible && !!active)
         .setPosition(actor.sprite.x, actor.sprite.y - 32);
@@ -638,17 +774,23 @@ export class OfficeScene extends Phaser.Scene {
         !blocked &&
         (Math.floor(time / 6000) % Math.max(1, this.actors.length) ===
           actor.index ||
-          (actor.id === 'md' && Math.floor(time / 8000) % 3 === 0));
+          (actor.id === 'md' && Math.floor(time / 8000) % 3 === 0) ||
+          (actor.id === 'ceo-radish' && Math.floor(time / 6000) % 3 === 0));
       actor.bubble
         .setVisible(speaking)
         .setPosition(actor.sprite.x, actor.sprite.y - 45);
       if (speaking)
         actor.bubble.setText(
-          actor.id === 'md'
-            ? 'I NEED THIS YESTERDAY.\nWhatever it is.'
-            : chatter[
-                (actor.index + Math.floor(time / 12000)) % chatter.length
-              ],
+          actor.id === 'ceo-radish'
+            ? 'URGENT. I am part of the CEO team.'
+            : actor.id === 'md'
+              ? 'I NEED THIS YESTERDAY.\nWhatever it is.'
+              : employee?.departmentId === 'logistics'
+                ? (w?.logistics?.[this.office].activity ??
+                  'Counting stock. Again.')
+                : chatter[
+                    (actor.index + Math.floor(time / 12000)) % chatter.length
+                  ],
         );
     }
     const destinations = this.allTargets();

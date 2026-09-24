@@ -303,10 +303,15 @@ export function Workspace({
             <Timer size={17} />
             <b>
               {timeText(
-                realSeconds(session, SESSION_SECONDS - session.elapsed),
+                realSeconds(
+                  session,
+                  session.game.continuous
+                    ? session.elapsed
+                    : SESSION_SECONDS - session.elapsed,
+                ),
               )}
             </b>
-            <small>remaining</small>
+            <small>{session.game.continuous ? 'in office' : 'remaining'}</small>
           </span>
           <div className="speed-control" aria-label="Simulation speed">
             {([1, 2, 4] as const).map((speed) => (
@@ -323,7 +328,11 @@ export function Workspace({
           <button
             className={`clock-button ${session.paused ? 'primary' : ''}`}
             onClick={() => {
-              if (session.paused && session.elapsed === 0)
+              if (
+                !session.game.continuous &&
+                session.paused &&
+                session.elapsed === 0
+              )
                 shiftDialog.current?.showModal();
               else setPaused(!session.paused);
             }}
@@ -333,7 +342,9 @@ export function Workspace({
             {session.paused
               ? session.elapsed
                 ? 'Resume'
-                : 'Start shift'
+                : session.game.continuous
+                  ? 'Resume career'
+                  : 'Start shift'
               : 'Pause'}
           </button>
           {musicButton}
@@ -390,7 +401,7 @@ export function Workspace({
           <span>Business week</span>
           <strong>
             {String(game.turn).padStart(2, '0')}
-            <small>/20</small>
+            {!session.game.continuous && <small>/20</small>}
           </strong>
           <div className="week-track">
             <span

@@ -148,6 +148,6 @@ describe('real-time leadership simulation', () => {
         true,
       );
     }
-    expect(owners.size).toBe(9);
+    expect(owners.size).toBe(11);
   });
 });

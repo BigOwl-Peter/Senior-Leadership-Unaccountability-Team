@@ -20,6 +20,7 @@ import {
   ShieldCheck,
   Volume2,
   VolumeX,
+  Warehouse,
   X,
 } from 'lucide-react';
 import { useGameStore } from '../stores/gameStore';
@@ -43,15 +44,18 @@ import {
 } from './model';
 import { worldChoiceEffects } from './engine';
 import { OfficeScene, type Target } from './OfficeScene';
-import { spriteCanvas } from './art';
+import { spriteCanvas, radishCanvas } from './art';
+import { meetingRounds, ceoOrders, type PoliticalMove } from './politics';
 import './world.css';
 
 function Portrait({
   avatar,
   boss = false,
+  radish = false,
 }: {
   avatar: Avatar;
   boss?: boolean;
+  radish?: boolean;
 }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -59,18 +63,20 @@ function Portrait({
     if (ctx) {
       ctx.clearRect(0, 0, 32, 48);
       ctx.drawImage(
-        spriteCanvas(
-          boss
-            ? { skin: '#d9a381', coat: '#493f59', hair: '#ddd7c3' }
-            : characters.find((c) => c.id === avatar)!,
-          0,
-          boss,
-        ),
+        radish
+          ? radishCanvas()
+          : spriteCanvas(
+              boss
+                ? { skin: '#d9a381', coat: '#493f59', hair: '#ddd7c3' }
+                : characters.find((c) => c.id === avatar)!,
+              0,
+              boss,
+            ),
         0,
         0,
       );
     }
-  }, [avatar, boss]);
+  }, [avatar, boss, radish]);
   return (
     <canvas
       ref={canvas}
@@ -78,7 +84,13 @@ function Portrait({
       height={48}
       className="world-portrait"
       role="img"
-      aria-label={boss ? mdName : characters.find((c) => c.id === avatar)!.name}
+      aria-label={
+        radish
+          ? 'Radish / CEO Team'
+          : boss
+            ? mdName
+            : characters.find((c) => c.id === avatar)!.name
+      }
     />
   );
 }
@@ -182,12 +194,17 @@ export default function WorldApp() {
   const { session, notice, setPaused, beginWorld, worldDecision, fly } =
     useGameStore();
   const w = session.world;
+  const politics = w?.politics,
+    meeting = politics?.meeting,
+    ceoOrder = politics?.order;
+  const politicalRound = meeting
+    ? meetingRounds[(meeting.theme + meeting.round) % meetingRounds.length]
+    : null;
   const { muted, toggleMusic, audioError } = useGameAudio();
   useLiveClock(!!w);
   const [avatar, setAvatar] = useState<Avatar>('operator'),
     [team, setTeam] = useState<DepartmentId>('operations'),
-    [name, setName] = useState('Zanele Dube'),
-    [minutes, setMinutes] = useState<10 | 20>(20);
+    [name, setName] = useState('Zanele Dube');
   const [laptop, setLaptop] = useState(false),
     [help, setHelp] = useState(false),
     [target, setTarget] = useState<Target | null>(null),
@@ -274,7 +291,7 @@ export default function WorldApp() {
     setCaseId(null);
   };
   const start = () => {
-    beginWorld(avatar, team, name, minutes);
+    beginWorld(avatar, team, name, 20);
     setNear(null);
   };
   const reset = () => {
@@ -349,6 +366,9 @@ export default function WorldApp() {
               </strong>
             </span>
             <em>Target: zero</em>
+            <small className="politics-bonus">
+              Meetings +{session.game.meetingBonus ?? 0} pts
+            </small>
           </div>
           {(['albion', 'continental'] as const).map((id) => (
             <div
@@ -374,8 +394,11 @@ export default function WorldApp() {
             </div>
           ))}
           <div className="world-time">
-            <b>{timeText(realSeconds(session, 1200 - session.elapsed))}</b>
-            <small>WEEK {session.game.turn}/20</small>
+            <b>Week {session.game.turn}</b>
+            <small>ONGOING CAREER</small>
+            <small title="Annualised company turnover">
+              {money(session.game.metrics.turnover)} turnover
+            </small>
             <button
               onClick={() => setPaused(!session.paused)}
               disabled={session.game.status === 'finished'}
@@ -447,20 +470,6 @@ export default function WorldApp() {
                     ))}
                   </select>
                 </label>
-                <fieldset>
-                  <legend>Appointment length</legend>
-                  {([10, 20] as const).map((m) => (
-                    <label key={m}>
-                      <input
-                        type="radio"
-                        name="duration"
-                        checked={minutes === m}
-                        onChange={() => setMinutes(m)}
-                      />
-                      {m} minutes
-                    </label>
-                  ))}
-                </fieldset>
               </div>
               <footer>
                 <span>
@@ -523,6 +532,44 @@ export default function WorldApp() {
                 <MessageSquare size={15} /> On the floor{' '}
                 <span>{pending.filter((c) => c.kind === 'local').length}</span>
               </h2>
+              {meeting && ['invited', 'playing'].includes(meeting.status) && (
+                <button
+                  onClick={() =>
+                    scene.current?.find(
+                      meeting.office === w.office ? 'meeting' : 'travel',
+                    )
+                  }
+                >
+                  <b>S.L.U.T. meeting / +25 attendance</b>
+                  <small>
+                    {offices[meeting.office].name} / in person{' '}
+                    <span>
+                      {session.elapsed < meeting.starts
+                        ? `Starts ${timeText(realSeconds(session, meeting.starts - session.elapsed))}`
+                        : `Ends ${timeText(realSeconds(session, meeting.ends - session.elapsed))}`}
+                    </span>
+                  </small>
+                </button>
+              )}
+              {ceoOrder && !ceoOrder.resolved && (
+                <button
+                  onClick={() =>
+                    scene.current?.find(
+                      ceoOrder.office === w.office ? 'ceo' : 'travel',
+                    )
+                  }
+                >
+                  <b>URGENT / Radish, CEO Team</b>
+                  <small>
+                    {offices[ceoOrder.office].name} / in person{' '}
+                    <span>
+                      {timeText(
+                        realSeconds(session, ceoOrder.due - session.elapsed),
+                      )}
+                    </span>
+                  </small>
+                </button>
+              )}
               {pending
                 .filter((c) => c.kind === 'local')
                 .slice(0, 3)
@@ -564,6 +611,27 @@ export default function WorldApp() {
                 onClick={() => scene.current?.zoom(-0.15)}
               >
                 <Minus size={18} />
+              </button>
+              <button
+                aria-label="Find stock room"
+                title="Walk to stock and dispatch"
+                onClick={() => scene.current?.find('stock')}
+              >
+                <Warehouse size={18} />
+              </button>
+              <button
+                aria-label="Find meeting room"
+                title="Walk to meeting room"
+                onClick={() => scene.current?.find('meeting')}
+              >
+                <BriefcaseBusiness size={18} />
+              </button>
+              <button
+                aria-label="Find CEO team"
+                title="Walk to CEO-team visiting suite"
+                onClick={() => scene.current?.find('ceo')}
+              >
+                <ShieldCheck size={18} />
               </button>
               <button
                 aria-label="Find travel desk"
@@ -680,108 +748,249 @@ export default function WorldApp() {
           />
         </Modal>
       )}
-      {(target || activeCase) && w && (
+      {target?.kind === 'stock' && w && (
         <Modal
-          title={
-            activeCase
-              ? scriptFor(activeCase)[0]
-              : (target?.name ?? 'Conversation')
-          }
+          title={`${offices[w.office].name} stock and dispatch`}
           close={closeConversation}
-          className="world-conversation"
         >
-          <div className="world-speaker">
-            <Portrait
-              avatar={activeCase?.kind === 'md' ? 'auditor' : avatar}
-              boss={activeCase?.kind === 'md' || target?.id === 'md'}
-            />
-            <div>
-              <b>
-                {activeCase?.kind === 'md'
-                  ? mdName
-                  : person
-                    ? `${person.firstName} ${person.surname}`
-                    : target?.name}
-              </b>
-              <span>
-                {activeCase
-                  ? `${offices[activeCase.office].name} / ${teamName(activeCase.departmentId)}`
-                  : person
-                    ? person.jobTitle
-                    : 'Managing director'}
-              </span>
-            </div>
-          </div>
-          <blockquote>
-            {activeCase
-              ? scriptFor(activeCase)[1]
-              : target?.id === 'md'
-                ? 'The stimulant-fuelled vision is simple: more growth, less sleep, and your signature on the consequences.'
-                : chatter[(person?.firstName.length ?? 0) % chatter.length]}
-          </blockquote>
-          {activeCase && !activeCase.choice ? (
-            <>
-              <p className="world-decision-deadline">
-                Decision due in{' '}
-                {timeText(
-                  realSeconds(session, activeCase.due - session.elapsed),
-                )}
-                . The clock is still running.
-              </p>
-              <div className="world-choices">
-                {(['comply', 'document', 'refuse'] as WorldChoice[]).map(
-                  (choice, index) => {
-                    const effects = worldChoiceEffects(
-                      session,
-                      activeCase,
-                      choice,
-                    );
-                    return (
-                      <button
-                        key={choice}
-                        disabled={
-                          effects.cost > 0 &&
-                          session.game.company.cash -
-                            session.game.company.pendingCosts <
-                            effects.cost
-                        }
-                        onClick={() => worldDecision(activeCase.id, choice)}
-                      >
-                        <strong>{scriptFor(activeCase)[index + 2]}</strong>
-                        <span>
-                          Accountability {effects.accountability > 0 ? '+' : ''}
-                          {effects.accountability} / corruption{' '}
-                          {effects.corruption > 0 ? '+' : ''}
-                          {effects.corruption} / MD favour{' '}
-                          {effects.favor > 0 ? '+' : ''}
-                          {effects.favor}
-                        </span>
-                        <small>
-                          {money(effects.cost)} / team morale{' '}
-                          {effects.morale > 0 ? '+' : ''}
-                          {effects.morale}
-                        </small>
-                      </button>
-                    );
-                  },
-                )}
-              </div>
-            </>
+          <p>
+            {w.logistics?.[w.office].activity ?? 'Preparing the stock count'}
+          </p>
+          <dl>
+            <dt>Stock on hand</dt>
+            <dd>{w.logistics?.[w.office].units ?? 0} units</dd>
+            <dt>Verified for dispatch</dt>
+            <dd>{w.logistics?.[w.office].counted ?? 0} units</dd>
+            <dt>Dispatched</dt>
+            <dd>{w.logistics?.[w.office].shipped ?? 0} units</dd>
+            <dt>Lost consignments</dt>
+            <dd>{w.logistics?.[w.office].lost ?? 0} units</dd>
+          </dl>
+          <button
+            onClick={() => {
+              closeConversation();
+              setLaptop(true);
+            }}
+          >
+            Open logistics correspondence
+          </button>
+        </Modal>
+      )}
+      {target?.kind === 'meeting' && w && (
+        <Modal title="S.L.U.T. leadership meeting" close={closeConversation}>
+          {!meeting || meeting.office !== w.office ? (
+            <p>
+              No meeting is booked in this office.{' '}
+              {meeting &&
+                `The next session is in ${offices[meeting.office].name}.`}
+            </p>
           ) : (
             <>
               <p>
-                {activeCase?.outcome ??
-                  (person
-                    ? `Morale ${Math.round(person.morale)} / stress ${Math.round(person.stress)}. The laptop holds their full record.`
-                    : 'He would like a different answer to the same question.')}
+                {offices[meeting.office].name} / Attendance +25 points / Three
+                political rounds
               </p>
-              <button className="world-primary" onClick={closeConversation}>
-                Back to the office
-              </button>
+              <p role="status">{meeting.feedback}</p>
+              {meeting.status === 'invited' && (
+                <button
+                  className="world-primary"
+                  disabled={session.elapsed < meeting.starts}
+                  onClick={() => useGameStore.getState().attendMeeting()}
+                >
+                  {session.elapsed < meeting.starts
+                    ? `Starts in ${timeText(realSeconds(session, meeting.starts - session.elapsed))}`
+                    : 'Take your seat (+25 points)'}
+                </button>
+              )}
+              {meeting.status === 'playing' && politicalRound && (
+                <>
+                  <h3>
+                    Round {meeting.round + 1}: {politicalRound.title}
+                  </h3>
+                  <p>{politicalRound.cue}</p>
+                  <div className="politics-choices">
+                    {(['md', 'ceo', 'record'] as PoliticalMove[]).map(
+                      (move, i) => (
+                        <button
+                          key={move}
+                          onClick={() =>
+                            useGameStore.getState().playPolitics(move)
+                          }
+                        >
+                          {politicalRound.responses[i]}
+                        </button>
+                      ),
+                    )}
+                  </div>
+                </>
+              )}
+              {meeting.status === 'complete' && (
+                <p>
+                  Meeting complete. Your bonuses are included in the leadership
+                  score.
+                </p>
+              )}
             </>
           )}
+          {notice && <p role="alert">{notice}</p>}
         </Modal>
       )}
+      {target?.kind === 'ceo' && w && (
+        <Modal title="Parent company / CEO Team" close={closeConversation}>
+          <div className="world-speaker">
+            <Portrait avatar="auditor" radish />
+            <div>
+              <b>Radish</b>
+              <span>CEO Team / Executive urgency</span>
+            </div>
+          </div>
+          <p>
+            Ledger: Group Assurance. Velvet: Strategic Alignment. External
+            reporting line: parent-company CEO.
+          </p>
+          <p>
+            CEO-team favour {politics?.ceoFavor ?? 45}% / MD favour{' '}
+            {Math.round(w.mdFavor)}%
+          </p>
+          {politics?.ceoOffice !== w.office ? (
+            <p>
+              The CEO team is visiting{' '}
+              {offices[politics?.ceoOffice ?? 'continental'].name}.
+            </p>
+          ) : ceoOrder && !ceoOrder.resolved ? (
+            <>
+              <h3>{ceoOrders[ceoOrder.topic][0]}</h3>
+              <p>{ceoOrders[ceoOrder.topic][1]}</p>
+              <div className="politics-choices">
+                <button
+                  onClick={() => useGameStore.getState().answerCEO('ceo')}
+                >
+                  Prioritise Radish / CEO favour +12, MD favour -8
+                </button>
+                <button onClick={() => useGameStore.getState().answerCEO('md')}>
+                  Back the MD / MD favour +8, accountability +3
+                </button>
+                <button
+                  onClick={() => useGameStore.getState().answerCEO('record')}
+                >
+                  Get Radish to sign the scope / accountability -4
+                </button>
+              </div>
+            </>
+          ) : (
+            <p>
+              {ceoOrder?.outcome ||
+                '"I am part of the CEO team. Please remain urgently available."'}
+            </p>
+          )}
+          {notice && <p role="alert">{notice}</p>}
+        </Modal>
+      )}
+      {((target && !['stock', 'meeting', 'ceo'].includes(target.kind)) ||
+        activeCase) &&
+        w && (
+          <Modal
+            title={
+              activeCase
+                ? scriptFor(activeCase)[0]
+                : (target?.name ?? 'Conversation')
+            }
+            close={closeConversation}
+            className="world-conversation"
+          >
+            <div className="world-speaker">
+              <Portrait
+                avatar={activeCase?.kind === 'md' ? 'auditor' : avatar}
+                boss={activeCase?.kind === 'md' || target?.id === 'md'}
+              />
+              <div>
+                <b>
+                  {activeCase?.kind === 'md'
+                    ? mdName
+                    : person
+                      ? `${person.firstName} ${person.surname}`
+                      : target?.name}
+                </b>
+                <span>
+                  {activeCase
+                    ? `${offices[activeCase.office].name} / ${teamName(activeCase.departmentId)}`
+                    : person
+                      ? person.jobTitle
+                      : 'Managing director'}
+                </span>
+              </div>
+            </div>
+            <blockquote>
+              {activeCase
+                ? scriptFor(activeCase)[1]
+                : target?.id === 'md'
+                  ? 'The stimulant-fuelled vision is simple: more growth, less sleep, and your signature on the consequences.'
+                  : chatter[(person?.firstName.length ?? 0) % chatter.length]}
+            </blockquote>
+            {activeCase && !activeCase.choice ? (
+              <>
+                <p className="world-decision-deadline">
+                  Decision due in{' '}
+                  {timeText(
+                    realSeconds(session, activeCase.due - session.elapsed),
+                  )}
+                  . The clock is still running.
+                </p>
+                <div className="world-choices">
+                  {(['comply', 'document', 'refuse'] as WorldChoice[]).map(
+                    (choice, index) => {
+                      const effects = worldChoiceEffects(
+                        session,
+                        activeCase,
+                        choice,
+                      );
+                      return (
+                        <button
+                          key={choice}
+                          disabled={
+                            effects.cost > 0 &&
+                            session.game.company.cash -
+                              session.game.company.pendingCosts <
+                              effects.cost
+                          }
+                          onClick={() => worldDecision(activeCase.id, choice)}
+                        >
+                          <strong>{scriptFor(activeCase)[index + 2]}</strong>
+                          <span>
+                            Accountability{' '}
+                            {effects.accountability > 0 ? '+' : ''}
+                            {effects.accountability} / corruption{' '}
+                            {effects.corruption > 0 ? '+' : ''}
+                            {effects.corruption} / MD favour{' '}
+                            {effects.favor > 0 ? '+' : ''}
+                            {effects.favor}
+                          </span>
+                          <small>
+                            {money(effects.cost)} / team morale{' '}
+                            {effects.morale > 0 ? '+' : ''}
+                            {effects.morale}
+                          </small>
+                        </button>
+                      );
+                    },
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <p>
+                  {activeCase?.outcome ??
+                    (person
+                      ? `Morale ${Math.round(person.morale)} / stress ${Math.round(person.stress)}. The laptop holds their full record.`
+                      : 'He would like a different answer to the same question.')}
+                </p>
+                <button className="world-primary" onClick={closeConversation}>
+                  Back to the office
+                </button>
+              </>
+            )}
+          </Modal>
+        )}
       {travel && w && !w.flight && (
         <Modal title="Executive travel desk" close={() => setTravel(false)}>
           <Plane size={36} />
@@ -794,6 +1003,26 @@ export default function WorldApp() {
             {realSeconds(session, 30)} seconds at the current pace. Both offices
             and their deadlines continue.
           </p>
+          {meeting &&
+            meeting.office !== w.office &&
+            ['invited', 'playing'].includes(meeting.status) && (
+              <p>
+                <b>Reason to travel:</b> S.L.U.T. meeting in{' '}
+                {offices[meeting.office].name}. In-person attendance earns 25
+                points; political rounds can earn another 45.{' '}
+                {session.elapsed < meeting.starts
+                  ? `Starts in ${timeText(realSeconds(session, meeting.starts - session.elapsed))}.`
+                  : `Ends in ${timeText(realSeconds(session, meeting.ends - session.elapsed))}.`}
+              </p>
+            )}
+          {ceoOrder && !ceoOrder.resolved && ceoOrder.office !== w.office && (
+            <p>
+              <b>CEO-team summons:</b> Radish requires you in{' '}
+              {offices[ceoOrder.office].name} within{' '}
+              {timeText(realSeconds(session, ceoOrder.due - session.elapsed))}.
+              He has mentioned his reporting line again.
+            </p>
+          )}
           <button
             className="world-primary"
             onClick={() => {
@@ -828,9 +1057,15 @@ export default function WorldApp() {
           <p>
             L opens your laptop: the original Mail, Chat, Teams, People and
             Staff Survey systems all remain active. Walk to the travel desk to
-            fly between offices. Space pauses. Your objective is exactly zero
-            personal accountability at the end, with both offices below 70
-            corruption.
+            fly between offices. Space pauses. Keep accountability low and both
+            offices trading. There is no time limit: 100% accountability or zero
+            annualised turnover ends your career. Stock teams count and dispatch
+            goods; unresolved logistics requests hold shipments and missed
+            deadlines lose stock and customers. Leadership meetings rotate
+            between offices: attend in person for 25 bonus points, then read the
+            evidence in three political rounds for up to 45 more. Radish's
+            CEO-team requests require a visit to his current office. The agenda
+            shows where to travel and how long you have.
           </p>
           <p>
             The MD is a fictional executive whose stimulant abuse, sleepless
@@ -863,9 +1098,8 @@ export default function WorldApp() {
         <Modal title="Appointment review" close={() => setSummary(false)}>
           <ShieldCheck size={38} />
           <h3>
-            {session.game.metrics.accountability === 0 &&
-            Math.max(w.corruption.albion, w.corruption.continental) < 70
-              ? 'Immaculately unaccountable.'
+            {session.game.metrics.turnover <= 0
+              ? 'Nothing left to sell.'
               : 'The paper trail found you.'}
           </h3>
           <p>
@@ -878,8 +1112,8 @@ export default function WorldApp() {
           </p>
           <p>
             {w.cases.filter((c) => c.choice && c.choice !== 'expired').length}{' '}
-            floor decisions made. {w.visits.continental} visits to South Africa.
-            The board thanks whoever is available.
+            floor decisions on record. {w.visits.continental} visits to South
+            Africa. The board thanks whoever is available.
           </p>
           <button className="world-primary" onClick={reset}>
             New appointment

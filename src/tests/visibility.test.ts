@@ -31,7 +31,7 @@ describe('office visibility and expanded content', () => {
     ).toBe(true);
   });
   it('triples standard emails with unique scenarios, choices and valid chains', () => {
-    expect(events.filter((e) => !e.followUpOnly)).toHaveLength(81);
+    expect(events.filter((e) => !e.followUpOnly)).toHaveLength(177);
     expect(careerEmails).toHaveLength(54);
     expect(new Set(events.map((e) => e.id)).size).toBe(events.length);
     expect(new Set(events.map((e) => e.title)).size).toBe(events.length);

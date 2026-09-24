@@ -7,7 +7,9 @@ export type DepartmentId =
   | 'finance'
   | 'hr'
   | 'it'
-  | 'compliance';
+  | 'compliance'
+  | 'bdm'
+  | 'specialists';
 export type OfficeId = 'albion' | 'continental';
 export interface Employee {
   id: string;
@@ -163,6 +165,8 @@ export interface GameState {
   seed: string;
   turn: number;
   maxTurns: number;
+  continuous?: boolean;
+  meetingBonus?: number;
   status: 'running' | 'finished';
   managementActionUsed: boolean;
   personnelActionsLeft: number;

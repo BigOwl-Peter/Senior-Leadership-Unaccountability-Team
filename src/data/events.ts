@@ -2,6 +2,7 @@ import type { GameEffect, GameEvent } from '../models/game';
 import { teamEvents } from './teamEvents';
 import { expandedEvents, chainLinks } from './expandedEvents';
 import { careerEmails } from './careerEmails';
+import { buildPoliticalDeck } from './politicalEvents';
 const effect = (
   type: Exclude<GameEffect['type'], 'WORKLOAD'>,
   amount: number,
@@ -300,7 +301,7 @@ const baseEvents: GameEvent[] = [
     ],
   },
 ];
-export const events: GameEvent[] = [
+export const originalEvents: GameEvent[] = [
   ...careerEmails,
   ...baseEvents.map((event) => ({
     ...event,
@@ -317,6 +318,9 @@ export const events: GameEvent[] = [
   })),
   ...expandedEvents,
 ];
+const politicalDeck = buildPoliticalDeck(originalEvents);
+export const politicalConversations = politicalDeck.conversations;
+export const events = [...originalEvents, ...politicalDeck.events];
 export function getEvent(id: string) {
   const event = events.find((e) => e.id === id);
   if (!event) throw new Error(`Unknown event: ${id}`);

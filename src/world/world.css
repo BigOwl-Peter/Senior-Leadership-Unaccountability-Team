@@ -289,7 +289,8 @@
   background: #fffdf5f2;
   border: 1px solid #c3cbb8;
   border-radius: 5px;
-  overflow: hidden;
+  overflow: auto;
+  max-height: 40%;
 }
 .world-matters h2 {
   display: flex;
@@ -299,6 +300,21 @@
   padding: 10px 12px;
   margin: 0;
   background: #ebefe3;
+}
+.politics-choices {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0;
+}
+.politics-choices button {
+  text-align: left;
+  white-space: normal;
+  padding: 12px;
+}
+.politics-bonus {
+  display: block;
+  font-size: 11px;
+  color: #58766c;
 }
 .world-matters h2 span {
   margin-left: auto;
@@ -321,11 +337,14 @@
 .world-matters small {
   font-size: 10px;
   color: #798370;
-  display: block;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px;
   margin-top: 4px;
 }
 .world-matters small span {
-  float: right;
+  float: none;
   color: #ab6951;
 }
 .world-matters p {

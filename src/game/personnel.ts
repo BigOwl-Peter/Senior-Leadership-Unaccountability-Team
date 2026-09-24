@@ -88,7 +88,7 @@ export function managePersonnel(
   if (action.type === 'hire') {
     const candidate = state.candidates.find((c) => c.id === action.candidateId);
     if (!candidate) throw new Error('This candidate is no longer available.');
-    if (state.turn + candidate.leadTime > state.maxTurns)
+    if (!state.continuous && state.turn + candidate.leadTime > state.maxTurns)
       throw new Error(
         'This candidate cannot arrive before the appointment ends.',
       );
@@ -266,9 +266,14 @@ export function processPersonnel(state: GameState) {
       0,
       20,
     );
-    if (rng.value() * 100 < e.resignationRisk && state.turn < state.maxTurns) {
+    if (
+      rng.value() * 100 < e.resignationRisk &&
+      (state.continuous || state.turn < state.maxTurns)
+    ) {
       e.status = 'notice';
-      e.departureTurn = Math.min(state.maxTurns, state.turn + 2);
+      e.departureTurn = state.continuous
+        ? state.turn + 2
+        : Math.min(state.maxTurns, state.turn + 2);
       record(
         state,
         e,
@@ -276,7 +281,7 @@ export function processPersonnel(state: GameState) {
       );
     } else if (
       rng.value() * 100 < e.absenceRisk &&
-      state.turn < state.maxTurns
+      (state.continuous || state.turn < state.maxTurns)
     ) {
       e.status = 'absent';
       e.returnTurn = state.turn + rng.int(1, 2);

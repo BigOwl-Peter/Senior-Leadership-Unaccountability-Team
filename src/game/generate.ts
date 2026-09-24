@@ -11,7 +11,7 @@ export function createGame(input = 'SLUT-ALPHA-01'): GameState {
     generateEmployee(
       seed,
       `employee-${i}`,
-      departmentDefinitions[i % 9].id,
+      departmentDefinitions[i % departmentDefinitions.length].id,
       i < 32 ? 'albion' : 'continental',
     ),
   );

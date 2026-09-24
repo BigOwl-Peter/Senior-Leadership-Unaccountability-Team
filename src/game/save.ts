@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { SaveData } from '../models/game';
 import { events } from '../data/events';
+import { expandTeams } from './expandTeams';
 const finite = z.number().finite();
 const percent = finite.min(0).max(100);
 const departmentId = z.enum([
@@ -13,6 +14,8 @@ const departmentId = z.enum([
   'hr',
   'it',
   'compliance',
+  'bdm',
+  'specialists',
 ]);
 const officeId = z.enum(['albion', 'continental']);
 const metrics = z.object({
@@ -77,8 +80,10 @@ const schema = z.object({
   currentGame: z.object({
     gameId: z.string(),
     seed: z.string().min(1).max(80),
-    turn: z.number().int().min(1).max(20),
+    turn: z.number().int().min(1),
     maxTurns: z.literal(20),
+    continuous: z.boolean().optional(),
+    meetingBonus: z.number().int().nonnegative().optional(),
     status: z.enum(['running', 'finished']),
     managementActionUsed: z.boolean(),
     personnelActionsLeft: z.number().int().min(0).max(3).default(3),
@@ -105,7 +110,7 @@ const schema = z.object({
         z.object({
           id: z.string(),
           employee: employeeSchema,
-          dueTurn: z.number().int().min(1).max(20),
+          dueTurn: z.number().int().min(1),
           status: z.enum(['pending', 'joined', 'cancelled']),
         }),
       )
@@ -134,7 +139,8 @@ const schema = z.object({
           baselineWorkload: finite.nonnegative(),
         }),
       )
-      .length(9),
+      .min(9)
+      .max(11),
     employees: z.array(employeeSchema).min(1),
     products: z.array(
       z.object({
@@ -224,8 +230,9 @@ export const gameStateSchema = schema.shape.currentGame;
 export function parseSave(text: string): SaveData {
   const result = schema.parse(JSON.parse(text));
   const game = result.currentGame;
+  expandTeams({ game });
   if (
-    new Set(game.departments.map((d) => d.id)).size !== 9 ||
+    new Set(game.departments.map((d) => d.id)).size !== 11 ||
     new Set(game.offices.map((o) => o.id)).size !== 2 ||
     new Set(game.employees.map((e) => e.id)).size !== game.employees.length
   )

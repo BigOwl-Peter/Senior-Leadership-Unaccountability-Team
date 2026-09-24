@@ -3,6 +3,85 @@ import { createLiveSession, tickLive } from '../src/game/live';
 import { enterCareer } from '../src/world/engine';
 import { startShift } from '../src/game/sessionTiming';
 
+test('travels through the office to attend all three meeting rounds', async ({
+  page,
+}, testInfo) => {
+  const state = tickLive(
+    enterCareer(
+      startShift(createLiveSession('meeting-browser'), 20),
+      'diplomat',
+      'bdm',
+      'Sam',
+    ),
+    115,
+  );
+  state.world!.office = 'continental';
+  await page.addInitScript(
+    (s) =>
+      localStorage.setItem(
+        'slut-world-save-v1',
+        JSON.stringify({ schemaVersion: 2, session: s, highScores: [] }),
+      ),
+    state,
+  );
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Resume career' }).click();
+  await page.getByRole('button', { name: 'Find meeting room' }).click();
+  const meeting = page.getByRole('dialog', {
+    name: 'S.L.U.T. leadership meeting',
+  });
+  await expect(meeting).toBeVisible({ timeout: 15000 });
+  await meeting
+    .getByRole('button', { name: 'Take your seat (+25 points)' })
+    .click();
+  await expect(
+    meeting.getByText('Round 1: Who owns the promise?'),
+  ).toBeVisible();
+  await meeting.locator('.politics-choices button').nth(2).click();
+  await meeting.locator('.politics-choices button').nth(0).click();
+  await meeting.locator('.politics-choices button').nth(1).click();
+  await expect(meeting.getByText(/Meeting complete/)).toBeVisible();
+  await expect(page.locator('.politics-bonus')).toContainText('+70');
+  await page.screenshot({ path: testInfo.outputPath('meeting.png') });
+});
+
+test('walks to the CEO suite and answers Radish in person', async ({
+  page,
+}, testInfo) => {
+  const state = tickLive(
+    enterCareer(
+      startShift(createLiveSession('radish-browser'), 20),
+      'operator',
+      'specialists',
+      'Zanele',
+    ),
+    90,
+  );
+  await page.addInitScript(
+    (s) =>
+      localStorage.setItem(
+        'slut-world-save-v1',
+        JSON.stringify({ schemaVersion: 2, session: s, highScores: [] }),
+      ),
+    state,
+  );
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Resume career' }).click();
+  await page.getByRole('button', { name: 'Find CEO team' }).click();
+  const ceo = page.getByRole('dialog', { name: 'Parent company / CEO Team' });
+  await expect(ceo).toBeVisible({ timeout: 15000 });
+  await expect(
+    ceo.getByRole('img', { name: 'Radish / CEO Team' }),
+  ).toBeVisible();
+  await ceo.getByRole('button', { name: /Get Radish to sign/ }).click();
+  await expect(ceo.getByText(/Radish signed the scope/)).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('radish-dialog.png') });
+  await page
+    .getByRole('button', { name: 'Close Parent company / CEO Team' })
+    .click();
+  await page.screenshot({ path: testInfo.outputPath('ceo-suite.png') });
+});
+
 for (const width of [1440, 390]) {
   test(`world starts, moves and opens the real laptop ${width}`, async ({
     page,
@@ -14,6 +93,7 @@ for (const width of [1440, 390]) {
     await expect(
       page.getByRole('heading', { name: 'Welcome to the top.' }),
     ).toBeVisible();
+    await expect(page.getByText('Appointment length')).toHaveCount(0);
     await page.getByRole('button', { name: 'Accept appointment' }).click();
     await expect(page.getByLabel('Career status')).toContainText('London');
     await expect
@@ -92,6 +172,25 @@ test('click-to-walk travel and flight arrive at the other office', async ({
     page.getByRole('button', { name: 'Resume career' }),
   ).toBeVisible();
 });
+test('stock room can be reached and shows live inventory', async ({
+  page,
+}, testInfo) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Accept appointment' }).click();
+  await expect(page.getByText('ONGOING CAREER')).toBeVisible();
+  await page.getByRole('button', { name: 'Find stock room' }).click();
+  const stock = page.getByRole('dialog', { name: 'London stock and dispatch' });
+  await expect(stock).toBeVisible({ timeout: 15000 });
+  await expect(stock.getByText('Stock on hand')).toBeVisible();
+  await expect(stock.getByText('180 units', { exact: true })).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('stock-room.png') });
+  await stock
+    .getByRole('button', { name: 'Open logistics correspondence' })
+    .click();
+  await expect(
+    page.getByRole('dialog', { name: 'Executive laptop' }),
+  ).toBeVisible();
+});
 test('MD orders and staff conversations change career metrics', async ({
   page,
 }) => {
@@ -128,7 +227,10 @@ test('MD orders and staff conversations change career metrics', async ({
   ).toBeLessThan(before);
   await page.getByRole('button', { name: 'Back to the office' }).click();
   await page.getByRole('button', { name: 'Resume career' }).click();
-  await page.locator('.world-matters button').first().click();
+  await page
+    .locator('.world-matters button')
+    .filter({ hasText: 'Preferred supplier' })
+    .click();
   await expect(page.locator('.world-conversation')).toBeVisible({
     timeout: 15000,
   });

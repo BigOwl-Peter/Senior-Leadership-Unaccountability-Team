@@ -3,7 +3,7 @@ import type { LiveRequest, LiveSession, TeamMessage } from '../models/live';
 import { createGame } from './generate';
 import { businessWeek, tickOrganisation } from './organisation';
 import { tickStaffSurvey } from './staffSurvey';
-import { tickWorld } from '../world/engine';
+import { tickWorld, checkCareerFailure } from '../world/engine';
 import { chooseResponse, processTurn } from './engine';
 import { getEvent, events } from '../data/events';
 import {
@@ -93,7 +93,7 @@ function arrive(
     departmentId: conversation.owner,
     createdAt: session.elapsed,
     deadline: Math.min(
-      SESSION_SECONDS,
+      session.game.continuous ? Infinity : SESSION_SECONDS,
       session.elapsed +
         rng.int(38, 52) -
         (session.elapsed >= 720 ? 8 : session.elapsed >= 360 ? 4 : 0),
@@ -110,11 +110,18 @@ function arrive(
     requestId: request.id,
     departmentId: request.departmentId,
     author: request.departmentId,
-    text: conversation.proposal,
+    text:
+      conversation.proposal +
+      (session.world && request.departmentId === 'logistics'
+        ? ` Stock room: ${session.requests.filter((r) => r.departmentId === 'logistics').length % 2 === 1 ? 'London' : 'Cape Town'}. Dispatch is held until this decision is resolved.`
+        : ''),
     kind: 'request',
   });
   session.nextArrival =
-    session.elapsed + rng.int(22, 29) - (session.elapsed >= 720 ? 5 : 0);
+    session.elapsed +
+    (session.world
+      ? rng.int(65, 90)
+      : rng.int(22, 29) - (session.elapsed >= 720 ? 5 : 0));
 }
 export function createLiveSession(seed = 'SLUT-LIVE-01'): LiveSession {
   const game = createGame(seed);
@@ -203,7 +210,7 @@ function resolve(
       ).value() <= (follow.probability ?? 1)
     ) {
       const dueAt = session.elapsed + follow.delay;
-      if (dueAt <= SESSION_SECONDS - 20)
+      if (session.game.continuous || dueAt <= SESSION_SECONDS - 20)
         session.scheduledEvents.push({
           eventId: follow.eventId,
           dueAt,
@@ -251,6 +258,7 @@ export function respondLive(
 ): LiveSession {
   const next = structuredClone(input);
   resolve(next, getPending(next, id), choiceId, 'you');
+  checkCareerFailure(next);
   return next;
 }
 export function delegateLive(
@@ -265,7 +273,10 @@ export function delegateLive(
   request.status = 'delegated';
   recordTempo(next, request);
   request.delegatedTo = departmentId;
-  request.resolveAt = Math.min(SESSION_SECONDS, next.elapsed + 12);
+  request.resolveAt = Math.min(
+    next.game.continuous ? Infinity : SESSION_SECONDS,
+    next.elapsed + 12,
+  );
   request.read = true;
   applyEffects(next.game, [
     { type: 'ACCOUNTABILITY', amount: -5 },
@@ -311,7 +322,10 @@ export function requestAssessment(input: LiveSession, id: string): LiveSession {
     throw new Error('An impact assessment has already been requested.');
   request.extended = true;
   request.originalDeadline ??= request.deadline;
-  request.deadline = Math.min(SESSION_SECONDS, request.deadline + 15);
+  request.deadline = Math.min(
+    next.game.continuous ? Infinity : SESSION_SECONDS,
+    request.deadline + 15,
+  );
   applyEffects(next.game, [
     { type: 'WORKLOAD', departmentId: request.departmentId, amount: 15 },
     { type: 'EXECUTIVE_APPROVAL', amount: -1 },
@@ -363,7 +377,20 @@ export function tickLive(input: LiveSession, seconds = 1): LiveSession {
   if (!Number.isInteger(seconds) || seconds < 0 || seconds > SESSION_SECONDS)
     throw new Error('Invalid clock step.');
   let next = structuredClone(input);
-  for (let tick = 0; tick < seconds && next.elapsed < SESSION_SECONDS; tick++) {
+  for (
+    let tick = 0;
+    tick < seconds && (next.game.continuous || next.elapsed < SESSION_SECONDS);
+    tick++
+  ) {
+    if (next.game.status === 'finished') break;
+    if (
+      next.game.continuous &&
+      (next.game.metrics.accountability >= 100 ||
+        next.game.metrics.turnover <= 0)
+    ) {
+      next.game.status = 'finished';
+      break;
+    }
     next.elapsed++;
     for (const request of next.requests) {
       const conversation = conversations[request.eventId];
@@ -458,11 +485,16 @@ export function tickLive(input: LiveSession, seconds = 1): LiveSession {
         next.elapsed >= request.deadline
       )
         resolve(next, request, conversation.defaultChoice, 'timeout');
+      if (checkCareerFailure(next)) break;
     }
+    if (checkCareerFailure(next)) break;
     if (next.elapsed % 30 === 15) autonomousWork(next);
     tickOrganisation(next);
+    if (checkCareerFailure(next)) break;
     tickStaffSurvey(next);
+    if (checkCareerFailure(next)) break;
     tickWorld(next);
+    if (checkCareerFailure(next)) break;
     if (next.elapsed % WEEK_SECONDS === 0) {
       const logLength = next.game.eventHistory.length;
       businessWeek(next);
@@ -488,7 +520,17 @@ export function tickLive(input: LiveSession, seconds = 1): LiveSession {
         text: `Week ${next.game.history.at(-1)!.turn} accounts closed. Annualised turnover is GBP ${(next.game.metrics.turnover / 1e6).toFixed(2)}m. The board has received the figures.`,
       });
     }
-    if (next.elapsed >= SESSION_SECONDS - 20 && next.scheduledEvents.length) {
+    if (
+      next.game.continuous &&
+      (next.game.metrics.accountability >= 100 ||
+        next.game.metrics.turnover <= 0)
+    )
+      next.game.status = 'finished';
+    if (
+      !next.game.continuous &&
+      next.elapsed >= SESSION_SECONDS - 20 &&
+      next.scheduledEvents.length
+    ) {
       sendMessage(next, {
         author: 'system',
         departmentId: 'operations',
@@ -512,7 +554,7 @@ export function tickLive(input: LiveSession, seconds = 1): LiveSession {
     }
     if (
       next.elapsed >= next.nextArrival &&
-      next.elapsed < SESSION_SECONDS - 20 &&
+      (next.game.continuous || next.elapsed < SESSION_SECONDS - 20) &&
       next.requests.filter((r) => ['pending', 'delegated'].includes(r.status))
         .length < 3
     )

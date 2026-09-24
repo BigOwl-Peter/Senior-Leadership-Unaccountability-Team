@@ -3,6 +3,32 @@ export interface Palette {
   coat: string;
   hair: string;
 }
+export function radishCanvas(frame = 0) {
+  const canvas = spriteCanvas(
+    { skin: '#f2eee6', coat: '#49384f', hair: '#59a15f' },
+    frame,
+  );
+  const c = canvas.getContext('2d')!;
+  c.clearRect(0, 0, 32, 24);
+  c.fillStyle = '#438849';
+  c.fillRect(15, 0, 3, 10);
+  c.fillRect(7, 1, 8, 4);
+  c.fillRect(18, 2, 9, 4);
+  c.fillStyle = '#8fc66b';
+  c.fillRect(11, 0, 4, 7);
+  c.fillRect(20, 0, 4, 4);
+  c.fillStyle = '#bd3764';
+  c.fillRect(7, 9, 20, 10);
+  c.fillRect(10, 7, 14, 15);
+  c.fillStyle = '#faf0df';
+  c.fillRect(10, 17, 14, 5);
+  c.fillRect(14, 22, 6, 3);
+  c.fillStyle = '#273535';
+  c.fillRect(11, 12, 3, 3);
+  c.fillRect(21, 12, 3, 3);
+  c.fillRect(16, 18, 5, 2);
+  return canvas;
+}
 export function spriteCanvas(p: Palette, frame = 0, boss = false) {
   const canvas = document.createElement('canvas');
   canvas.width = 32;

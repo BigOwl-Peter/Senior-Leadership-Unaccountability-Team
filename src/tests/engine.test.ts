@@ -39,7 +39,7 @@ describe('phase 2: seeded game model', () => {
     expect(a).not.toEqual(createGame('other-seed'));
     expect(a.employees).toHaveLength(61);
     expect(a.employees.filter((e) => e.officeId === 'albion')).toHaveLength(32);
-    expect(a.departments).toHaveLength(9);
+    expect(a.departments).toHaveLength(11);
     expect(a.departments.every((d) => d.capacity > 0)).toBe(true);
     expect(new Set(a.employees.map((e) => e.id)).size).toBe(61);
   });

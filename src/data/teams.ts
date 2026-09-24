@@ -1,10 +1,23 @@
 import type { DepartmentId } from '../models/game';
 import { expandedConversations } from './expandedEvents';
 import { careerConversations } from './careerEmails';
+import { politicalConversations } from './events';
 export const teams: Record<
   DepartmentId,
   { initials: string; color: string; lead: string; role: string }
 > = {
+  bdm: {
+    initials: 'NK',
+    color: '#357c78',
+    lead: 'Nadia King',
+    role: 'Head of Business Development',
+  },
+  specialists: {
+    initials: 'TM',
+    color: '#ab5964',
+    lead: 'Thabo Mokoena',
+    role: 'Head of Specialists',
+  },
   sales: {
     initials: 'MC',
     color: '#3174ad',
@@ -69,6 +82,8 @@ export interface Conversation {
   reply: string;
 }
 export const teamPriorities: Record<DepartmentId, string> = {
+  bdm: 'Build qualified opportunities, not imaginary pipeline.',
+  specialists: 'Protect technical standards and expert capacity.',
   sales: 'Close the deal. Protect the quarter.',
   service: 'Keep the customer. Clear the queue.',
   logistics: 'Get the shipment out correctly.',
@@ -124,6 +139,7 @@ export const preferredResponses: Partial<
   it: { it: 'fix', budget: 'release', people: 'relief' },
 };
 export const conversations: Record<string, Conversation> = {
+  ...politicalConversations,
   ...careerConversations,
   ...expandedConversations,
   budget: {

@@ -17,4 +17,6 @@ export const departmentDefinitions: {
   { id: 'hr', name: 'HR', title: 'People Partner' },
   { id: 'it', name: 'IT', title: 'IT Support Analyst' },
   { id: 'compliance', name: 'Compliance', title: 'Compliance Officer' },
+  { id: 'bdm', name: 'BDMs', title: 'Business Development Manager' },
+  { id: 'specialists', name: 'Specialists', title: 'Technical Specialist' },
 ];

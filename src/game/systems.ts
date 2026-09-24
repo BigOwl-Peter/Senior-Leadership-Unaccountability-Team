@@ -148,7 +148,11 @@ export function leadershipScore(state: GameState) {
         (0.05 * m.customerSatisfaction) / 100 +
         (0.05 * m.operationalHealth) / 100),
   );
-  return clamp(base + decisionSpeedScore(state), 0, 6000);
+  return clamp(
+    base + decisionSpeedScore(state) + (state.meetingBonus ?? 0),
+    0,
+    6000,
+  );
 }
 export function rating(score: number) {
   return [

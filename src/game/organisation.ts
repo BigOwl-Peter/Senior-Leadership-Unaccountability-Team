@@ -206,7 +206,10 @@ export function answerCase(input: LiveSession, id: string, action: CaseAction) {
   const team = org.teams.find((t) => t.id === item.departmentId)!;
   item.action = action;
   item.status = 'owned';
-  item.due = Math.min(1200, s.elapsed + (action === 'dismiss' ? 90 : 45));
+  item.due = Math.min(
+    s.game.continuous ? Infinity : 1200,
+    s.elapsed + (action === 'dismiss' ? 90 : 45),
+  );
   if (action === 'support') {
     item.supportCost = supportCost;
     applyEffects(s.game, [
@@ -245,7 +248,7 @@ export function tickOrganisation(s: LiveSession) {
     ) {
       item.status = 'owned';
       item.action = 'team';
-      item.due = Math.min(1200, s.elapsed + 45);
+      item.due = Math.min(s.game.continuous ? Infinity : 1200, s.elapsed + 45);
       applyEffects(s.game, [
         { type: 'WORKLOAD', departmentId: 'hr', amount: 35 },
       ]);
@@ -296,10 +299,10 @@ export function tickOrganisation(s: LiveSession) {
       !success,
     );
   }
-  const interval = s.elapsed < 600 ? 90 : 60;
+  const interval = s.world ? 45 : s.elapsed < 600 ? 90 : 60;
   if (
     s.elapsed % interval === 30 &&
-    s.elapsed < 1080 &&
+    (s.game.continuous || s.elapsed < 1080) &&
     org.cases.filter((c) => c.status === 'open').length < 3
   ) {
     const people = s.game.employees.filter((e) => e.status === 'active');
@@ -338,8 +341,9 @@ export function tickOrganisation(s: LiveSession) {
       );
     }
   }
-  if (s.elapsed % 45 === 20) {
-    const index = Math.floor(s.elapsed / 45);
+  const chatInterval = s.world ? 25 : 45;
+  if (s.elapsed % chatInterval === 20) {
+    const index = Math.floor(s.elapsed / chatInterval);
     const rng = randomFor(s.game.seed, `leadership-chat-${index}`);
     const speaker =
       s.game.departments[rng.int(0, s.game.departments.length - 1)];

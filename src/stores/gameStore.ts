@@ -22,6 +22,12 @@ import { startShift } from '../game/sessionTiming';
 import { publishStaffSurvey, type SurveyMethod } from '../game/staffSurvey';
 import { enterCareer, resolveWorldCase, takeFlight } from '../world/engine';
 import type { Avatar, WorldChoice } from '../world/model';
+import {
+  attendMeeting,
+  playPolitics,
+  answerCEO,
+  type PoliticalMove,
+} from '../world/politics';
 const KEY = 'slut-world-save-v1';
 function restore() {
   try {
@@ -61,6 +67,9 @@ function persist(session: LiveSession, highScores: HighScore[]) {
   }
 }
 interface Store {
+  attendMeeting: () => void;
+  playPolitics: (move: PoliticalMove) => void;
+  answerCEO: (move: PoliticalMove) => void;
   beginWorld: (
     avatar: Avatar,
     team: DepartmentId,
@@ -95,6 +104,14 @@ export const useGameStore = create<Store>((set, get) => {
       const previous = get().session;
       const session = action(previous);
       if (previous === session) return;
+      if (
+        session.game.continuous &&
+        (session.game.metrics.accountability >= 100 ||
+          session.game.metrics.turnover <= 0)
+      ) {
+        session.game.status = 'finished';
+        session.paused = true;
+      }
       let highScores = get().highScores;
       if (
         previous.game.status !== 'finished' &&
@@ -118,6 +135,9 @@ export const useGameStore = create<Store>((set, get) => {
   }
   return {
     ...restore(),
+    attendMeeting: () => update(attendMeeting),
+    playPolitics: (move) => update((s) => playPolitics(s, move)),
+    answerCEO: (move) => update((s) => answerCEO(s, move)),
     beginWorld: (avatar, team, name, minutes) => {
       const session = enterCareer(
         startShift(
@@ -142,8 +162,8 @@ export const useGameStore = create<Store>((set, get) => {
               world: {
                 ...s.world,
                 position: {
-                  x: Math.max(32, Math.min(1248, x)),
-                  y: Math.max(32, Math.min(832, y)),
+                  x: Math.max(32, Math.min(1568, x)),
+                  y: Math.max(32, Math.min(1024, y)),
                 },
               },
             },
